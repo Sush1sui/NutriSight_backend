@@ -10,7 +10,7 @@ export const register = async (req: Request, res: Response) => {
     return;
   }
   const existing = await UserAccount.findOne({ email });
-  if (existing) {
+  if (existing && existing.isVerified) {
     res.status(409).json({ message: "Email already registered" });
     return;
   }
@@ -44,7 +44,14 @@ export const verifyOtp = async (req: Request, res: Response) => {
   user.otp = undefined;
   user.otpExpires = undefined;
   await user.save();
-  res.json({ message: "Account verified" });
+  req.logIn(user, (err) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ message: "Session login failed after verification" });
+    }
+    return res.json({ message: "Account verified and user logged in", user });
+  });
 };
 
 export const login = async (req: Request, res: Response) => {
@@ -63,5 +70,26 @@ export const login = async (req: Request, res: Response) => {
     res.status(401).json({ message: "Invalid credentials" });
     return;
   }
-  res.json({ message: "Login successful", user });
+  req.logIn(user, (err) => {
+    if (err) {
+      return res.status(500).json({ message: "Session login failed" });
+    }
+    return res.json({ message: "Login successful", user });
+  });
+};
+
+export const logout = (req: Request, res: Response) => {
+  req.logout((err) => {
+    if (err) {
+      return res.status(500).json({ message: "Error during logout" });
+    }
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Error destroying session" });
+      }
+      res.clearCookie("connect.sid"); // Default session cookie name
+      return res.json({ message: "Logout successful" });
+    });
+    return;
+  });
 };

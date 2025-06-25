@@ -12,25 +12,25 @@ passport.use(
       passReqToCallback: true,
     },
     async (
-      request: any,
-      accessToken: string,
-      refreshToken: string,
+      _request: any,
+      _accessToken: string,
+      _refreshToken: string,
       profile: Profile,
       done: any
     ) => {
       try {
-        console.log({
-          request,
-          accessToken,
-          refreshToken,
-          profile,
-        });
+        // for debugging purposes, you can log the request and profile
+        // console.log({
+        //   request,
+        //   accessToken,
+        //   refreshToken,
+        //   profile,
+        // });
         let user = await UserAccount.findOne({ gmailId: profile.id });
         if (!user) {
           user = await UserAccount.create({
             gmailId: profile.id,
-            firstName: profile?.name?.givenName || undefined,
-            lastName: profile?.name?.familyName || undefined,
+            name: profile?.displayName || undefined,
             isVerified: true,
           });
         }

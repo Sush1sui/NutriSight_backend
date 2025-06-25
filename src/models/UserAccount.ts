@@ -2,8 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IUserAccount extends Document {
   gmailId?: string;
-  firstName?: string;
-  lastName?: string;
+  name?: string;
   email?: string;
   password?: string;
   otp?: string;
@@ -13,8 +12,7 @@ export interface IUserAccount extends Document {
 
 const UserAccountSchema = new Schema<IUserAccount>({
   gmailId: { type: String, unique: true, sparse: true },
-  firstName: { type: String },
-  lastName: { type: String },
+  name: { type: String },
   email: { type: String, unique: true, sparse: true },
   password: { type: String },
   otp: { type: String },

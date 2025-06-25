@@ -1,5 +1,10 @@
 import express from "express";
-import { register, verifyOtp, login } from "../controllers/authLocalController";
+import {
+  register,
+  verifyOtp,
+  login,
+  logout,
+} from "../controllers/authLocalController";
 
 const router = express.Router();
 
@@ -11,5 +16,8 @@ router.post("/verify-otp", verifyOtp);
 
 // Login with email/password
 router.post("/login", login);
+
+// Logout
+router.post("/logout", logout);
 
 export default router;
