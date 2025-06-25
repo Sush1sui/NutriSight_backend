@@ -4,6 +4,7 @@ import {
   verifyOtp,
   login,
   logout,
+  checkSession,
 } from "../controllers/authLocalController";
 
 const router = express.Router();
@@ -19,5 +20,8 @@ router.post("/login", login);
 
 // Logout
 router.post("/logout", logout);
+
+// Check session status
+router.get("/session", checkSession);
 
 export default router;

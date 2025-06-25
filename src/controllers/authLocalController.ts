@@ -93,3 +93,19 @@ export const logout = (req: Request, res: Response) => {
     return;
   });
 };
+
+export const checkSession = (req: Request, res: Response) => {
+  if (req.isAuthenticated() && req.user) {
+    const sessionUser = req.user as any; // User object from Passport
+    res.status(200).json({
+      user: {
+        id: sessionUser.id,
+        displayName: sessionUser.name || sessionUser.email,
+        email: sessionUser.email,
+      },
+    });
+  } else {
+    // No active session
+    res.status(401).json({ message: "Not authenticated" });
+  }
+};
