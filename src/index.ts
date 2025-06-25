@@ -41,6 +41,14 @@ app.use(passport.session());
 app.use("/auth/google", authGoogleRoutes);
 app.use("/auth", authLocalRoutes);
 
+app.get("/debug-protocol", (req, res) => {
+  res.json({
+    protocol: req.protocol,
+    hostname: req.hostname,
+    full_url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+  });
+});
+
 app.get("/success", (req, res) => {
   res.json({ message: "Authentication successful", user: req.user });
 });
