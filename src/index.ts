@@ -8,6 +8,9 @@ import authLocalRoutes from "./routes/auth.local";
 import { connectDB } from "./db";
 import MongoStore from "connect-mongo";
 
+const SERVER_LINK = process.env.SERVER_LINK;
+let timeoutId: NodeJS.Timeout;
+
 const app = express();
 app.set("trust proxy", 1); // Trust the first proxy
 app.use(express.json());
@@ -60,3 +63,22 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+function pingServer() {
+  if (!SERVER_LINK) return;
+
+  const attemptPing = () => {
+    fetch(SERVER_LINK)
+      .then((res) => res.text())
+      .then((text) => console.log(`Ping successful: ${text}`))
+      .catch((err) => {
+        clearTimeout(timeoutId);
+        console.log(`Ping failed, retrying: ${err}`);
+        timeoutId = setTimeout(attemptPing, 5000);
+      });
+  };
+
+  attemptPing(); // Start the ping loop immediately
+}
+
+setInterval(pingServer, 600000);
