@@ -9,6 +9,7 @@ import { connectDB } from "./db";
 import MongoStore from "connect-mongo";
 
 const app = express();
+app.set("trust proxy", 1); // Trust the first proxy
 app.use(express.json());
 
 // Session setup
@@ -23,7 +24,12 @@ app.use(
       collectionName: "sessions",
       ttl: 14 * 24 * 60 * 60, // 14 days in seconds
     }),
-    cookie: { maxAge: 14 * 24 * 60 * 60 * 1000 }, // 14 days in ms
+    cookie: {
+      maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days in ms
+      secure: process.env.NODE_ENV === "production", // Only send cookie over HTTPS in production
+      httpOnly: true, // Prevent client-side JS from accessing the cookie
+      sameSite: "lax", // Or 'strict' depending on your needs
+    },
   })
 );
 
