@@ -23,11 +23,7 @@ app.use(
       collectionName: "sessions",
       ttl: 14 * 24 * 60 * 60, // 14 days in seconds
     }),
-    cookie: {
-      maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days in ms
-      secure: process.env.NODE_ENV === "production", // Only send cookie over HTTPS in production
-      httpOnly: true, // Prevent client-side JS from accessing the cookie
-    },
+    cookie: { maxAge: 14 * 24 * 60 * 60 * 1000 }, // 14 days in ms
   })
 );
 
