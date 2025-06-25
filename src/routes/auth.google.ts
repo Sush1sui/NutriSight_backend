@@ -1,91 +1,48 @@
 import express from "express";
 import passport from "passport";
-import "express-session"; // Import for side-effects to enable module augmentation
-
-// Extend the Express session interface to include our custom property
-declare module "express-session" {
-  interface SessionData {
-    isMobile?: boolean;
-  }
-}
 
 const router = express.Router();
 
 // Google OAuth2 login
-router.get("/", (req, res, next) => {
-  // We'll use a query parameter to distinguish clients.
-  // React Native will send ?platform=mobile
-  const isMobile = req.query.platform === "mobile";
-  if (req.session) {
-    req.session.isMobile = isMobile;
-  }
-  passport.authenticate("google", { scope: ["profile", "email"] })(
-    req,
-    res,
-    next
-  );
-});
+router.get(
+  "/",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
 
-// Google OAuth2 callback for both Web and React Native
+// Google OAuth2 callback for React Native
 router.get("/callback", (req, res, next) => {
   passport.authenticate("google", (err: any, user: any, _info: any) => {
     if (err) {
-      console.error("Authentication error:", err);
-      const isMobile = req.session?.isMobile;
-      if (isMobile) {
-        return res.redirect("nutrisight://auth/failure?error=auth_error");
-      }
-      return res
+      // Handle internal server errors
+      res
         .status(500)
-        .send(
-          "<h1>Authentication Error</h1><p>Something went wrong. Please try again.</p><script>setTimeout(window.close, 3000);</script>"
-        );
+        .json({ message: "Authentication error", error: err.message });
+      return;
     }
     if (!user) {
-      const isMobile = req.session?.isMobile;
-      if (isMobile) {
-        return res.redirect("nutrisight://auth/failure");
-      }
-      // For web, close the popup.
-      return res.send("<script>window.close();</script>");
+      res.redirect("nutrisight://auth/failure");
+      return;
     }
     // Manually login the user to establish a session
-    req.logIn(user, (loginErr) => {
-      if (loginErr) {
-        console.error("Login error after Google auth:", loginErr);
-        const isMobile = req.session?.isMobile;
-        if (isMobile) {
-          return res.redirect("nutrisight://auth/failure?error=login_failed");
-        }
-        return res
-          .status(500)
-          .send(
-            "<h1>Login Error</h1><p>Could not log you in. Please try again.</p><script>setTimeout(window.close, 3000);</script>"
-          );
+    req.logIn(user, (err) => {
+      if (err) {
+        res.redirect("nutrisight://auth/failure?error=login_failed");
+        return;
       }
-
-      const isMobile = req.session?.isMobile;
-      // Clean up the session
-      if (req.session) {
-        delete req.session.isMobile;
-      }
-
-      if (isMobile) {
-        // MOBILE: Redirect to the custom scheme for the app to handle.
-        const userJson = JSON.stringify({
-          id: user.id,
-          displayName: user.displayName,
-          email: user.email,
-        });
-        res.redirect(
-          `nutrisight://auth/success?user=${encodeURIComponent(userJson)}`
-        );
-      } else {
-        // WEB: Send a script to close the popup.
-        // The main window will get the session cookie and can update its state.
-        res.send("<script>window.close();</script>");
-      }
+      // On success, redirect to a success path, passing user data.
+      // The session is established on the server via a cookie that the
+      // in-app browser will handle.
+      const userJson = JSON.stringify({
+        id: user.id,
+        displayName: user.displayName,
+        email: user.email,
+      });
+      res.redirect(
+        `nutrisight://auth/success?user=${encodeURIComponent(userJson)}`
+      );
+      return;
     });
+    return;
   })(req, res, next);
 });
 
