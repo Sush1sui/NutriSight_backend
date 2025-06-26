@@ -6,9 +6,9 @@ import UserAccount from "../models/UserAccount";
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const verifyGoogleToken = async (req: Request, res: Response) => {
-  const { token } = req.body;
+  const { idToken } = req.body;
 
-  if (!token) {
+  if (!idToken) {
     res.status(400).json({ message: "ID token not provided." });
     return;
   }
@@ -16,7 +16,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
   try {
     // Verify the ID token with Google.
     const ticket = await client.verifyIdToken({
-      idToken: token,
+      idToken,
       audience: process.env.GOOGLE_CLIENT_ID, // Specify the CLIENT_ID of the app that accesses the backend
     });
 
