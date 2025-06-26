@@ -27,15 +27,15 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
       return;
     }
 
-    const { sub: gmailId, email, name } = payload;
+    const { sub: id, email, name } = payload;
 
     // Upsert logic: Find user by Google ID, or by email, or create new.
-    let user = await UserAccount.findOne({ gmailId });
+    let user = await UserAccount.findOne({ gmailId: id });
 
     if (!user && email) {
       const existingUser = await UserAccount.findOne({ email });
       if (existingUser) {
-        existingUser.gmailId = gmailId;
+        existingUser.gmailId = id;
         existingUser.isVerified = true; // Google verifies the email
         user = await existingUser.save();
       }
@@ -43,10 +43,9 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
     if (!user) {
       user = await UserAccount.create({
-        gmailId,
+        gmailId: id,
         email,
         name,
-        displayName: name, // The user's full name from Google
         isVerified: true, // Email is verified by Google
       });
     }
