@@ -44,6 +44,10 @@ app.use(passport.session());
 app.use("/auth/google", authGoogleRoutes);
 app.use("/auth", authLocalRoutes);
 
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to NutriSight Backend API" });
+});
+
 app.get("/debug-protocol", (req, res) => {
   res.json({
     protocol: req.protocol,
