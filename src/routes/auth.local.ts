@@ -5,12 +5,16 @@ import {
   login,
   logout,
   checkSession,
+  sendOtp,
 } from "../controllers/authLocalController";
 
 const router = express.Router();
 
 // Register with email/password (send OTP)
 router.post("/register", register);
+
+// Send OTP to email
+router.post("/send-otp", sendOtp);
 
 // Verify OTP
 router.post("/verify-otp", verifyOtp);

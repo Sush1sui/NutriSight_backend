@@ -12,6 +12,48 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+export const sendOtp = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    res.status(400).json({ message: "Email is required" });
+    return;
+  }
+
+  // Check if user exists
+  const existing = await UserAccount.findOne({ email });
+  if (existing && existing.isVerified) {
+    res.status(409).json({ message: "Email already registered" });
+    return;
+  }
+
+  const otp = crypto.randomInt(1000, 9999).toString();
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+  // Use updateOne with upsert to handle both new and unverified users
+  await UserAccount.updateOne(
+    { email },
+    {
+      $set: {
+        otp,
+        otpExpires,
+        isVerified: false,
+      },
+    },
+    { upsert: true }
+  );
+
+  // Send OTP to email
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Your OTP for Verification",
+    text: `Your OTP is: ${otp}`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 export const register = async (req: Request, res: Response) => {
   const { email, name, password } = req.body;
   if (!email || !name || !password) {
