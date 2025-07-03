@@ -24,7 +24,7 @@ export const register = async (req: Request, res: Response) => {
     return;
   }
   const hashed = await bcrypt.hash(password, 10);
-  const otp = crypto.randomInt(100000, 999999).toString();
+  const otp = crypto.randomInt(1000, 9999).toString();
   const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
   // Use updateOne with upsert to handle both new and unverified users
