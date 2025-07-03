@@ -2,11 +2,20 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import UserAccount from "../models/UserAccount";
 import crypto from "crypto";
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER, // Add your email to .env
+    pass: process.env.EMAIL_PASS, // Add your password to .env
+  },
+});
 
 export const register = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    res.status(400).json({ message: "Email and password required" });
+  const { email, name, password } = req.body;
+  if (!email || !name || !password) {
+    res.status(400).json({ message: "Email, name, and password required" });
     return;
   }
   const existing = await UserAccount.findOne({ email });
@@ -17,15 +26,44 @@ export const register = async (req: Request, res: Response) => {
   const hashed = await bcrypt.hash(password, 10);
   const otp = crypto.randomInt(100000, 999999).toString();
   const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
-  const user = await UserAccount.create({
-    email,
-    password: hashed,
-    otp,
-    otpExpires,
-    isVerified: false,
-  });
-  // TODO: Send OTP to email (implement email sending)
-  res.json({ message: "OTP sent to email", userId: user._id });
+
+  // Use updateOne with upsert to handle both new and unverified users
+  await UserAccount.updateOne(
+    { email },
+    {
+      $set: {
+        password: hashed,
+        name,
+        otp,
+        otpExpires,
+        isVerified: false,
+      },
+    },
+    { upsert: true }
+  );
+
+  const user = await UserAccount.findOne({ email });
+  if (!user) {
+    res.status(500).json({ message: "Failed to create or find user" });
+    return;
+  }
+
+  // Send OTP to email
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Your OTP for Verification",
+    text: `Your OTP is: ${otp}`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.json({ message: "OTP sent to email", userId: user._id });
+    return;
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ message: "Error sending OTP email" });
+  }
 };
 
 export const verifyOtp = async (req: Request, res: Response) => {
