@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IUserAccount extends Document {
   gmailId?: string;
   profileLink?: string;
+  profilePublicId?: string; // Optional field for public profile ID
   gender?: string;
   birthdate?: Date;
   height?: number; // in feet
@@ -21,6 +22,7 @@ export interface IUserAccount extends Document {
 const UserAccountSchema = new Schema<IUserAccount>({
   gmailId: { type: String, unique: true, sparse: true },
   profileLink: { type: String, sparse: true },
+  profilePublicId: { type: String, sparse: true }, // Optional field for public profile ID
   birthdate: { type: Date, sparse: true },
   height: { type: Number, sparse: true }, // in feet
   weight: { type: Number, sparse: true }, // in kg
