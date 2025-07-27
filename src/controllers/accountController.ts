@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import cloudinary from "../middleware/cloudinary";
 import UserAccount from "../models/UserAccount";
 
 export const changeProfilePicture = async (req: Request, res: Response) => {
@@ -10,15 +9,17 @@ export const changeProfilePicture = async (req: Request, res: Response) => {
     }
 
     // upload the image to Cloudinary
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "user_profiles",
-    });
+    const profileLink = req.file.path;
+    if (!profileLink) {
+      res.status(400).json({ error: "Failed to upload image" });
+      return;
+    }
 
     // update user in DB
     const uid = (req.user as { _id: string })._id;
     const user = await UserAccount.findByIdAndUpdate(
       uid,
-      { profileLink: result.secure_url },
+      { profileLink },
       { new: true }
     );
 
