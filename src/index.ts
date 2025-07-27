@@ -5,6 +5,7 @@ import passport from "passport";
 import "./middleware/passport";
 import authGoogleRoutes from "./routes/auth.google";
 import authLocalRoutes from "./routes/auth.local";
+import accountRoutes from "./routes/account";
 import { connectDB } from "./db";
 import MongoStore from "connect-mongo";
 
@@ -43,6 +44,7 @@ app.use(passport.session());
 // Routes
 app.use("/auth/google", authGoogleRoutes);
 app.use("/auth", authLocalRoutes);
+app.use("/account", accountRoutes);
 
 app.get("/", (_req, res) => {
   res.json({ message: "Welcome to NutriSight Backend API" });
