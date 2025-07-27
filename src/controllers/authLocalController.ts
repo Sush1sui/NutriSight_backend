@@ -180,7 +180,7 @@ export const checkSession = (req: Request, res: Response) => {
     res.status(200).json({
       user: {
         id: sessionUser.id,
-        displayName: sessionUser.name || sessionUser.email,
+        name: sessionUser.name || sessionUser.email,
         email: sessionUser.email,
       },
     });
