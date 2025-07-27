@@ -179,9 +179,8 @@ export const checkSession = (req: Request, res: Response) => {
     const sessionUser = req.user as any; // User object from Passport
     res.status(200).json({
       user: {
-        id: sessionUser.id,
-        name: sessionUser.name || sessionUser.email,
-        email: sessionUser.email,
+        ...sessionUser,
+        password: undefined, // Don't expose password
       },
     });
   } else {
