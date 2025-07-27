@@ -8,6 +8,7 @@ export interface IUserAccount extends Document {
   birthdate?: Date;
   height?: number; // in feet
   weight?: number; // in kg
+  targetWeight?: number; // in kg
   bmi?: number; // Body Mass Index
   allergens?: string[]; // Array of allergens
   medicalConditions?: string[]; // Array of medical conditions
@@ -26,6 +27,7 @@ const UserAccountSchema = new Schema<IUserAccount>({
   birthdate: { type: Date, sparse: true },
   height: { type: Number, sparse: true }, // in feet
   weight: { type: Number, sparse: true }, // in kg
+  targetWeight: { type: Number, sparse: true }, // in kg
   bmi: { type: Number, sparse: true }, // Body Mass Index
   allergens: { type: [String], sparse: true },
   medicalConditions: { type: [String], sparse: true },

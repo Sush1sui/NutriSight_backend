@@ -4,6 +4,11 @@ import { v2 as cloudinary } from "cloudinary";
 
 export const changeProfilePicture = async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+
     if (!req.file) {
       res.status(400).json({ error: "No file uploaded" });
       return;
