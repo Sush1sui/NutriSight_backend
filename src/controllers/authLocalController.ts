@@ -179,8 +179,18 @@ export const checkSession = (req: Request, res: Response) => {
     const sessionUser = req.user as any; // User object from Passport
     res.status(200).json({
       user: {
-        ...sessionUser,
-        password: undefined, // Don't expose password
+        id: sessionUser.id,
+        name: sessionUser.name || sessionUser.email,
+        email: sessionUser.email,
+        profileLink: sessionUser.profileLink,
+        isVerified: sessionUser.isVerified,
+        gender: sessionUser.gender,
+        birthdate: sessionUser.birthdate,
+        height: sessionUser.height,
+        weight: sessionUser.weight,
+        bmi: sessionUser.bmi,
+        allergens: sessionUser.allergens,
+        medicalConditions: sessionUser.medicalConditions,
       },
     });
   } else {
