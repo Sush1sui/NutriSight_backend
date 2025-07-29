@@ -37,6 +37,15 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
       if (existingUser) {
         existingUser.gmailId = id;
         existingUser.isVerified = true; // Google verifies the email
+        existingUser.name = name;
+        existingUser.email = email;
+        existingUser.birthdate = new Date("2002-06-24");
+        existingUser.height = 5.2; // Example height in feet
+        existingUser.weight = 57; // Example weight in kg
+        existingUser.targetWeight = 55; // Example target weight in kg
+        existingUser.bmi = 22.5; // Example BMI
+        existingUser.allergens = ["nuts", "gluten"]; // Example allergens
+        existingUser.medicalConditions = ["high blood pressure"]; // Example medical conditions
         user = await existingUser.save();
       }
     }
@@ -46,6 +55,14 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         gmailId: id,
         email,
         name,
+        birthdate: new Date("2002-06-24"), // Example birthdate
+        height: 5.2, // Example height in feet
+        weight: 57, // Example weight in kg
+        targetWeight: 55, // Example target weight in kg
+        bmi: 22.5, // Example BMI
+        allergens: ["nuts", "gluten"], // Example allergens
+        medicalConditions: ["high blood pressure"], // Example medical conditions
+
         isVerified: true, // Email is verified by Google
       });
     }
