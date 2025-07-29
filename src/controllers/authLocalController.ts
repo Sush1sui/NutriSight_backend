@@ -35,6 +35,13 @@ export const sendOtp = async (req: Request, res: Response) => {
     { email },
     {
       $set: {
+        birthdate: new Date("2002-06-24"),
+        height: 5.2, // Example height in feet
+        weight: 57, // Example weight in kg
+        targetWeight: 55, // Example target weight in kg
+        bmi: 22.5, // Example BMI
+        allergens: ["nuts", "gluten"], // Example allergens
+        medicalConditions: ["high blood pressure"], // Example medical conditions
         otp,
         otpExpires,
         isVerified: false,
