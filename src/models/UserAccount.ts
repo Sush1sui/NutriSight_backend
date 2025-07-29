@@ -1,5 +1,14 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+interface NutritionalData {
+  [key: string]: number;
+}
+
+interface DietHistory {
+  date: Date;
+  nutritionalData: NutritionalData[];
+}
+
 export interface IUserAccount extends Document {
   gmailId?: string;
   profileLink?: string;
@@ -12,6 +21,7 @@ export interface IUserAccount extends Document {
   bmi?: number; // Body Mass Index
   allergens?: string[]; // Array of allergens
   medicalConditions?: string[]; // Array of medical conditions
+  dietHistory?: DietHistory[]; // Array of diet history records
   name?: string;
   email?: string;
   password?: string;

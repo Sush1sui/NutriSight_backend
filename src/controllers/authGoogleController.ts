@@ -46,6 +46,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         existingUser.bmi = 22.5; // Example BMI
         existingUser.allergens = ["nuts", "gluten"]; // Example allergens
         existingUser.medicalConditions = ["high blood pressure"]; // Example medical conditions
+        existingUser.dietHistory = []; // Initialize diet history
         user = await existingUser.save();
       }
     }
@@ -62,7 +63,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         bmi: 22.5, // Example BMI
         allergens: ["nuts", "gluten"], // Example allergens
         medicalConditions: ["high blood pressure"], // Example medical conditions
-
+        dietHistory: [], // Initialize diet history
         isVerified: true, // Email is verified by Google
       });
     }

@@ -42,6 +42,7 @@ export const sendOtp = async (req: Request, res: Response) => {
         bmi: 22.5, // Example BMI
         allergens: ["nuts", "gluten"], // Example allergens
         medicalConditions: ["high blood pressure"], // Example medical conditions
+        dietHistory: [],
         otp,
         otpExpires,
         isVerified: false,
