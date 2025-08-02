@@ -147,15 +147,15 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     return;
   }
 
-  console.log("Onboarding data:", {
-    name,
-    allergens,
-    gender,
-    age,
-    height,
-    weight,
-    email,
-  });
+  // console.log("Onboarding data:", {
+  //   name,
+  //   allergens,
+  //   gender,
+  //   age,
+  //   height,
+  //   weight,
+  //   email,
+  // });
 
   // Update user profile with onboarding data
   const user = await UserAccount.findOne({ email });
@@ -195,7 +195,7 @@ export const agreement = async (req: Request, res: Response) => {
       return res.status(500).json({ message: "Session login failed" });
     }
     return res.json({
-      message: "Onboarding completed successfully",
+      message: "Agreement completed successfully",
       user,
     });
   });

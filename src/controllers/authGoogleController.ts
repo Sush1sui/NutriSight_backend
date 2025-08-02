@@ -71,7 +71,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         res.status(401).json({ message: "User not found for login." });
       }
       return;
-    } else {
+    } else if (!user) {
       user = await UserAccount.create({
         gmailId: id,
         email,
@@ -88,34 +88,28 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         // dietHistory: [], // Initialize diet history
         isVerified: true, // Email is verified by Google
       });
+      res.status(200).json({
+        message: "User authenticated successfully",
+        email: user.email,
+        success: true,
+      });
+      return;
     }
 
     // Manually log in the user to establish a session cookie
-    // req.logIn(user, (err) => {
-    //   if (err) {
-    //     console.error("Session login error after token verification:", err);
-    //     res.status(500).json({ message: "Could not create session." });
-    //     return;
-    //   }
+    req.logIn(user, (err) => {
+      if (err) {
+        console.error("Session login error after token verification:", err);
+        res.status(500).json({ message: "Could not create session." });
+        return;
+      }
 
-    //   // On successful login, send back user data
-    //   res.status(200).json({
-    //     user: {
-    //       id: user.id,
-    //       name: user.name,
-    //       email: user.email,
-    //       firstName: user.firstName,
-    //       lastName: user.lastName,
-    //     },
-    //   });
-    //   return;
-    // });
-    res.status(200).json({
-      message: "User authenticated successfully",
-      email: user.email,
-      success: true,
+      // On successful login, send back user data
+      res.status(200).json({
+        user,
+      });
+      return;
     });
-    return;
   } catch (error) {
     console.error("Google token verification error:", error);
     res.status(401).json({ message: "Authentication failed. Invalid token." });
