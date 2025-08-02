@@ -22,8 +22,6 @@ export async function barcodeHandler(req: Request, res: Response) {
       return;
     }
 
-    console.log("req.body:", req.body);
-
     const { image } = req.body;
     if (!image) {
       res.status(400).json({ error: "Image data is required" });
@@ -66,7 +64,15 @@ export async function barcodeHandler(req: Request, res: Response) {
     reader.setHints(hints);
 
     // decode the barcode
-    const barcodeData = reader.decode(binaryBitmap).getText();
+    let barcodeData;
+    try {
+      barcodeData = reader.decode(binaryBitmap).getText();
+    } catch (err) {
+      console.error("Barcode decode error:", err);
+      res.status(400).json({ error: "No barcode detected in image" });
+      return;
+    }
+
     if (!barcodeData) {
       console.log("No barcode data found:", barcodeData);
       res.status(400).json({ error: "No barcode data found" });
