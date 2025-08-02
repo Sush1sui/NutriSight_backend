@@ -50,7 +50,7 @@ export async function barcodeHandler(req: Request, res: Response) {
           };
         })
       ),
-      3
+      6
     );
 
     res.status(200).json({
@@ -60,7 +60,7 @@ export async function barcodeHandler(req: Request, res: Response) {
         brand: food.brandOwner,
         ingredients: food.ingredients,
         nutrition: foodNutrients,
-        servingSize: `${food.servingSize} ${food.servingSizeUnit}`,
+        servingSize: `${food.servingSize}${food.servingSizeUnit}`,
       },
     });
     return;
