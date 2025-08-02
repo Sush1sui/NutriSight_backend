@@ -14,7 +14,7 @@ export interface IUserAccount extends Document {
   profileLink?: string;
   profilePublicId?: string; // Optional field for public profile ID
   gender?: string;
-  birthdate?: Date;
+  age?: number; // Age in years
   height?: number; // in feet
   weight?: number; // in kg
   targetWeight?: number; // in kg
@@ -22,6 +22,7 @@ export interface IUserAccount extends Document {
   allergens?: string[]; // Array of allergens
   medicalConditions?: string[]; // Array of medical conditions
   dietHistory?: DietHistory[]; // Array of diet history records
+  name?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -35,7 +36,7 @@ const UserAccountSchema = new Schema<IUserAccount>({
   gmailId: { type: String, unique: true, sparse: true },
   profileLink: { type: String, sparse: true },
   profilePublicId: { type: String, sparse: true }, // Optional field for public profile ID
-  birthdate: { type: Date, sparse: true },
+  age: { type: Number, sparse: true }, // Age in years
   height: { type: Number, sparse: true }, // in feet
   weight: { type: Number, sparse: true }, // in kg
   targetWeight: { type: Number, sparse: true }, // in kg
@@ -43,6 +44,7 @@ const UserAccountSchema = new Schema<IUserAccount>({
   allergens: { type: [String], sparse: true },
   medicalConditions: { type: [String], sparse: true },
   gender: { type: String, sparse: true },
+  name: { type: String, sparse: true },
   firstName: { type: String, sparse: true },
   lastName: { type: String, sparse: true },
   email: { type: String, unique: true, sparse: true },

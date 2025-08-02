@@ -27,7 +27,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
       return;
     }
 
-    const { sub: id, email, name } = payload;
+    const { sub: id, email, name, given_name, family_name } = payload;
 
     // Upsert logic: Find user by Google ID, or by email, or create new.
     let user = await UserAccount.findOne({ gmailId: id });
@@ -37,16 +37,18 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
       if (existingUser) {
         existingUser.gmailId = id;
         existingUser.isVerified = true; // Google verifies the email
-        existingUser.name = name;
+        existingUser.name = name || undefined;
+        existingUser.firstName = given_name || undefined;
+        existingUser.lastName = family_name || undefined;
         existingUser.email = email;
-        existingUser.birthdate = new Date("2002-06-24");
-        existingUser.height = 5.2; // Example height in feet
-        existingUser.weight = 57; // Example weight in kg
-        existingUser.targetWeight = 55; // Example target weight in kg
-        existingUser.bmi = 22.5; // Example BMI
-        existingUser.allergens = ["nuts", "gluten"]; // Example allergens
-        existingUser.medicalConditions = ["high blood pressure"]; // Example medical conditions
-        existingUser.dietHistory = []; // Initialize diet history
+        // existingUser.birthdate = new Date("2002-06-24");
+        // existingUser.height = 5.2; // Example height in feet
+        // existingUser.weight = 57; // Example weight in kg
+        // existingUser.targetWeight = 55; // Example target weight in kg
+        // existingUser.bmi = 22.5; // Example BMI
+        // existingUser.allergens = ["nuts", "gluten"]; // Example allergens
+        // existingUser.medicalConditions = ["high blood pressure"]; // Example medical conditions
+        // existingUser.dietHistory = []; // Initialize diet history
         user = await existingUser.save();
       }
     }
@@ -56,36 +58,46 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         gmailId: id,
         email,
         name,
-        birthdate: new Date("2002-06-24"), // Example birthdate
-        height: 5.2, // Example height in feet
-        weight: 57, // Example weight in kg
-        targetWeight: 55, // Example target weight in kg
-        bmi: 22.5, // Example BMI
-        allergens: ["nuts", "gluten"], // Example allergens
-        medicalConditions: ["high blood pressure"], // Example medical conditions
-        dietHistory: [], // Initialize diet history
+        firstName: given_name || undefined,
+        lastName: family_name || undefined,
+        // birthdate: new Date("2002-06-24"), // Example birthdate
+        // height: 5.2, // Example height in feet
+        // weight: 57, // Example weight in kg
+        // targetWeight: 55, // Example target weight in kg
+        // bmi: 22.5, // Example BMI
+        // allergens: ["nuts", "gluten"], // Example allergens
+        // medicalConditions: ["high blood pressure"], // Example medical conditions
+        // dietHistory: [], // Initialize diet history
         isVerified: true, // Email is verified by Google
       });
     }
 
     // Manually log in the user to establish a session cookie
-    req.logIn(user, (err) => {
-      if (err) {
-        console.error("Session login error after token verification:", err);
-        res.status(500).json({ message: "Could not create session." });
-        return;
-      }
+    // req.logIn(user, (err) => {
+    //   if (err) {
+    //     console.error("Session login error after token verification:", err);
+    //     res.status(500).json({ message: "Could not create session." });
+    //     return;
+    //   }
 
-      // On successful login, send back user data
-      res.status(200).json({
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-        },
-      });
-      return;
+    //   // On successful login, send back user data
+    //   res.status(200).json({
+    //     user: {
+    //       id: user.id,
+    //       name: user.name,
+    //       email: user.email,
+    //       firstName: user.firstName,
+    //       lastName: user.lastName,
+    //     },
+    //   });
+    //   return;
+    // });
+    res.status(200).json({
+      message: "User authenticated successfully",
+      email: user.email,
+      success: true,
     });
+    return;
   } catch (error) {
     console.error("Google token verification error:", error);
     res.status(401).json({ message: "Authentication failed. Invalid token." });

@@ -35,14 +35,14 @@ export const sendOtp = async (req: Request, res: Response) => {
     { email },
     {
       $set: {
-        birthdate: new Date("2002-06-24"),
-        height: 5.2, // Example height in feet
-        weight: 57, // Example weight in kg
-        targetWeight: 55, // Example target weight in kg
-        bmi: 22.5, // Example BMI
-        allergens: ["nuts", "gluten"], // Example allergens
-        medicalConditions: ["high blood pressure"], // Example medical conditions
-        dietHistory: [],
+        // birthdate: new Date("2002-06-24"),
+        // height: 5.2, // Example height in feet
+        // weight: 57, // Example weight in kg
+        // targetWeight: 55, // Example target weight in kg
+        // bmi: 22.5, // Example BMI
+        // allergens: ["nuts", "gluten"], // Example allergens
+        // medicalConditions: ["high blood pressure"], // Example medical conditions
+        // dietHistory: [],
         otp,
         otpExpires,
         isVerified: false,
@@ -135,13 +135,59 @@ export const verifyOtp = async (req: Request, res: Response) => {
   user.otp = undefined;
   user.otpExpires = undefined;
   await user.save();
+  res.json({ message: "OTP verified successfully", success: true });
+  return;
+};
+
+export const onboardingSubmit = async (req: Request, res: Response) => {
+  const { name, allergens, gender, age, height, weight, email } = req.body;
+
+  if (!name || !allergens || !gender || !age || !height || !weight) {
+    res.status(400).json({ message: "All fields are required" });
+    return;
+  }
+
+  // Update user profile with onboarding data
+  const user = await UserAccount.findOne({ email });
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  user.name = name;
+  user.allergens = allergens;
+  user.gender = gender;
+  user.age = age;
+  user.height = height;
+  user.weight = weight;
+  user.bmi = weight / (height * 0.3048) ** 2; // Calculate BMI
+
+  await user.save();
+  // login user
+  res.json({ message: "Onboarding completed successfully", success: true });
+  return;
+};
+
+export const agreement = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400).json({ message: "Email is required" });
+    return;
+  }
+  const user = await UserAccount.findOne({ email });
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
   req.logIn(user, (err) => {
     if (err) {
-      return res
-        .status(500)
-        .json({ message: "Session login failed after verification" });
+      return res.status(500).json({ message: "Session login failed" });
     }
-    return res.json({ message: "Account verified and user logged in", user });
+    return res.json({
+      message: "Onboarding completed successfully",
+      user,
+    });
   });
 };
 

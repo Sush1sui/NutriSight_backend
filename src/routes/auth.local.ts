@@ -6,6 +6,8 @@ import {
   logout,
   checkSession,
   sendOtp,
+  onboardingSubmit,
+  agreement,
 } from "../controllers/authLocalController";
 
 const router = express.Router();
@@ -18,6 +20,12 @@ router.post("/send-otp", sendOtp);
 
 // Verify OTP
 router.post("/verify-otp", verifyOtp);
+
+// Onboarding submission
+router.post("/onboarding", onboardingSubmit);
+
+// Agreement
+router.post("/agreement", agreement);
 
 // Login with email/password
 router.post("/login", login);
