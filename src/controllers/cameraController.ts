@@ -51,7 +51,7 @@ export async function barcodeHandler(req: Request, res: Response) {
         })
       ),
       6
-    );
+    ).map((groupOf6) => chunkArray(groupOf6, 2));
 
     res.status(200).json({
       message: "Barcode data received successfully",
@@ -59,7 +59,7 @@ export async function barcodeHandler(req: Request, res: Response) {
         name: food.description,
         brand: food.brandOwner,
         ingredients: food.ingredients,
-        nutrition: foodNutrients,
+        nutrition: foodNutrients, // T[][][]
         servingSize: `${food.servingSize}${food.servingSizeUnit}`,
       },
     });
