@@ -51,6 +51,26 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         // existingUser.dietHistory = []; // Initialize diet history
         user = await existingUser.save();
       }
+
+      if (existingUser) {
+        req.logIn(existingUser, (err) => {
+          if (err) {
+            console.error("Session login error after token verification:", err);
+            res.status(500).json({ message: "Could not create session." });
+            return;
+          }
+
+          // On successful login, send back user data
+          res.status(200).json({
+            user: existingUser,
+          });
+          return;
+        });
+        return;
+      } else {
+        res.status(401).json({ message: "User not found for login." });
+        return;
+      }
     }
 
     if (!user) {
