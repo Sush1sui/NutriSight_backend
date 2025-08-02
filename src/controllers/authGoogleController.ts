@@ -30,7 +30,6 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
     const { sub: id, email, name, given_name, family_name } = payload;
 
-    // Upsert logic: Find user by Google ID, or by email, or create new.
     let user = await UserAccount.findOne({ gmailId: id });
 
     if (user && !user.isVerified && user.email === email) {

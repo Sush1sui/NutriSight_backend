@@ -147,6 +147,16 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     return;
   }
 
+  console.log("Onboarding data:", {
+    name,
+    allergens,
+    gender,
+    age,
+    height,
+    weight,
+    email,
+  });
+
   // Update user profile with onboarding data
   const user = await UserAccount.findOne({ email });
   if (!user) {
