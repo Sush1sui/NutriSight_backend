@@ -245,21 +245,7 @@ export const checkSession = (req: Request, res: Response) => {
   if (req.isAuthenticated() && req.user) {
     const sessionUser = req.user as any; // User object from Passport
     res.status(200).json({
-      user: {
-        id: sessionUser.id,
-        firstName: sessionUser.firstName,
-        lastName: sessionUser.lastName,
-        email: sessionUser.email,
-        profileLink: sessionUser.profileLink,
-        isVerified: sessionUser.isVerified,
-        gender: sessionUser.gender,
-        birthdate: sessionUser.birthdate,
-        height: sessionUser.height,
-        weight: sessionUser.weight,
-        bmi: sessionUser.bmi,
-        allergens: sessionUser.allergens,
-        medicalConditions: sessionUser.medicalConditions,
-      },
+      user: sessionUser,
     });
   } else {
     // No active session
