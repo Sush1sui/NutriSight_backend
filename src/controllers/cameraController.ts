@@ -42,13 +42,15 @@ export async function barcodeHandler(req: Request, res: Response) {
 
     const foodNutrients = chunkArray(
       renameNutrition(
-        food.foodNutrients.map((n: any) => {
-          return {
-            name: n.nutrientName,
-            amount: n.value,
-            unit: n.unitName,
-          };
-        })
+        food.foodNutrients
+          .filter((n: any) => n.value !== 0)
+          .map((n: any) => {
+            return {
+              name: n.nutrientName,
+              amount: n.value,
+              unit: n.unitName,
+            };
+          })
       ),
       6
     ).map((groupOf6) => chunkArray(groupOf6, 2));
