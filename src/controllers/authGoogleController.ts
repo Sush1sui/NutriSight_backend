@@ -25,6 +25,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
     const payload = ticket.getPayload();
 
     if (!payload) {
+      console.error("Invalid ID token payload:", payload);
       res.status(401).json({ message: "Invalid ID token." });
       return;
     }
@@ -70,6 +71,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         });
         return;
       } else {
+        console.error("User not found for login.");
         res.status(401).json({ message: "User not found for login." });
         return;
       }
