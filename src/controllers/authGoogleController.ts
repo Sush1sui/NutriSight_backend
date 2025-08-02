@@ -8,6 +8,8 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 export const verifyGoogleToken = async (req: Request, res: Response) => {
   const { idToken } = req.body;
 
+  console.log("Received ID Token:", idToken);
+
   if (!idToken) {
     res.status(400).json({ message: "ID token not provided." });
     return;
