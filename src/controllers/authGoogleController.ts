@@ -62,7 +62,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
           // On successful login, send back user data
           res.status(200).json({
-            user: existingUser,
+            user: { ...existingUser, password: undefined },
           });
           return;
         });
@@ -106,7 +106,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
       // On successful login, send back user data
       res.status(200).json({
-        user,
+        user: { ...user, password: undefined },
       });
       return;
     });

@@ -196,7 +196,7 @@ export const agreement = async (req: Request, res: Response) => {
     }
     return res.json({
       message: "Agreement completed successfully",
-      user,
+      user: { ...user, password: undefined },
     });
   });
 };
@@ -221,7 +221,10 @@ export const login = async (req: Request, res: Response) => {
     if (err) {
       return res.status(500).json({ message: "Session login failed" });
     }
-    return res.json({ message: "Login successful", user });
+    return res.json({
+      message: "Login successful",
+      user: { ...user, password: undefined },
+    });
   });
 };
 
@@ -246,6 +249,7 @@ export const checkSession = (req: Request, res: Response) => {
     const sessionUser = req.user as any; // User object from Passport
     res.status(200).json({
       user: sessionUser,
+      password: undefined,
     });
   } else {
     // No active session
