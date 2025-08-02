@@ -1,13 +1,4 @@
-import {
-  BarcodeFormat,
-  BinaryBitmap,
-  DecodeHintType,
-  HybridBinarizer,
-  MultiFormatReader,
-  RGBLuminanceSource,
-} from "@zxing/library";
 import { Request, Response } from "express";
-import sharp from "sharp";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -22,63 +13,11 @@ export async function barcodeHandler(req: Request, res: Response) {
       return;
     }
 
-    const { image } = req.body;
-    if (!image) {
-      res.status(400).json({ error: "Image data is required" });
-      return;
-    }
-
-    // remove data uri prefix if it exists
-    const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
-    const imgBuffer = Buffer.from(base64Data, "base64");
-
-    // convert image to raw pixel data (rgba)
-    const { data: imgData, info } = await sharp(imgBuffer)
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-
-    // Convert Buffer to Uint8ClampedArray
-    const pixelArray = new Uint8ClampedArray(
-      imgData.buffer,
-      imgData.byteOffset,
-      imgData.length
-    );
-
-    // prep zxing reader
-    const luminanceSource = new RGBLuminanceSource(
-      pixelArray,
-      info.width,
-      info.height
-    );
-    const binaryBitmap = new BinaryBitmap(new HybridBinarizer(luminanceSource));
-    const reader = new MultiFormatReader();
-
-    // set hints for barcode formats
-    const hints = new Map();
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-      BarcodeFormat.EAN_13,
-      BarcodeFormat.EAN_8,
-      BarcodeFormat.UPC_A,
-      BarcodeFormat.UPC_E,
-    ]);
-    reader.setHints(hints);
-
-    // decode the barcode
-    let barcodeData;
-    try {
-      barcodeData = reader.decode(binaryBitmap).getText();
-    } catch (err) {
-      console.error("Barcode decode error:", err);
-      res.status(400).json({ error: "No barcode detected in image" });
-      return;
-    }
-
+    const { barcodeData } = req.body;
     if (!barcodeData) {
-      console.log("No barcode data found:", barcodeData);
-      res.status(400).json({ error: "No barcode data found" });
+      res.status(400).json({ message: "No barcode data provided" });
       return;
     }
-    console.log("Decoded barcode data:", barcodeData);
 
     const response = await fetch(
       `https://api.nal.usda.gov/fdc/v1/foods/search?query=${barcodeData}`,
