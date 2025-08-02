@@ -8,8 +8,6 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 export const verifyGoogleToken = async (req: Request, res: Response) => {
   const { idToken } = req.body;
 
-  console.log("Received ID Token:", idToken);
-
   if (!idToken) {
     res.status(400).json({ message: "ID token not provided." });
     return;
@@ -25,7 +23,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
     const payload = ticket.getPayload();
 
     if (!payload) {
-      console.error("Invalid ID token payload:", payload);
+      console.error("Invalid ID token payload");
       res.status(401).json({ message: "Invalid ID token." });
       return;
     }
@@ -35,7 +33,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
     // Upsert logic: Find user by Google ID, or by email, or create new.
     let user = await UserAccount.findOne({ gmailId: id });
 
-    if (!user && email) {
+    if (user && !user.isVerified && user.email === email) {
       const existingUser = await UserAccount.findOne({ email });
       if (existingUser) {
         existingUser.gmailId = id;
@@ -69,15 +67,12 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
           });
           return;
         });
-        return;
       } else {
         console.error("User not found for login.");
         res.status(401).json({ message: "User not found for login." });
-        return;
       }
-    }
-
-    if (!user) {
+      return;
+    } else {
       user = await UserAccount.create({
         gmailId: id,
         email,
