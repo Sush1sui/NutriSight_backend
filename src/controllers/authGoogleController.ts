@@ -60,9 +60,14 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
             return;
           }
 
+          const userObj = existingUser.toObject
+            ? existingUser.toObject()
+            : existingUser;
+          delete userObj.password; // Remove password from response
+
           // On successful login, send back user data
           res.status(200).json({
-            user: { ...existingUser, password: undefined },
+            user: userObj,
           });
           return;
         });
@@ -104,9 +109,12 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         return;
       }
 
+      const userObj = user.toObject ? user.toObject() : user;
+      delete userObj.password; // Remove password from response
+
       // On successful login, send back user data
       res.status(200).json({
-        user: { ...user, password: undefined },
+        user: userObj,
       });
       return;
     });

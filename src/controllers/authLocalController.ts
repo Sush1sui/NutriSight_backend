@@ -194,9 +194,13 @@ export const agreement = async (req: Request, res: Response) => {
     if (err) {
       return res.status(500).json({ message: "Session login failed" });
     }
+
+    const userObj = user.toObject ? user.toObject() : user;
+    delete userObj.password; // Remove password from response
+
     return res.json({
       message: "Agreement completed successfully",
-      user: { ...user, password: undefined },
+      user: userObj,
     });
   });
 };
@@ -217,13 +221,17 @@ export const login = async (req: Request, res: Response) => {
     res.status(401).json({ message: "Invalid credentials" });
     return;
   }
+
+  const userObj = user.toObject ? user.toObject() : user;
+  delete userObj.password; // Remove password from response
+
   req.logIn(user, (err) => {
     if (err) {
       return res.status(500).json({ message: "Session login failed" });
     }
     return res.json({
       message: "Login successful",
-      user: { ...user, password: undefined },
+      user: userObj,
     });
   });
 };
