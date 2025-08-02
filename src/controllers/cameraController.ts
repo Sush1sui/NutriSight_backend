@@ -60,6 +60,7 @@ export async function barcodeHandler(req: Request, res: Response) {
         brand: food.brandOwner,
         ingredients: food.ingredients,
         nutrition: foodNutrients,
+        servingSize: `${food.servingSize} ${food.servingSizeUnit}`,
       },
     });
     return;
