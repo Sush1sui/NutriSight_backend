@@ -31,7 +31,8 @@ passport.use(
         if (!user) {
           user = await UserAccount.create({
             gmailId: profile.id,
-            name: profile?.displayName || undefined,
+            firstName: profile?.name?.givenName || undefined,
+            lastName: profile?.name?.familyName || undefined,
             isVerified: true,
           });
         }

@@ -63,9 +63,11 @@ export const sendOtp = async (req: Request, res: Response) => {
 };
 
 export const register = async (req: Request, res: Response) => {
-  const { email, name, password } = req.body;
-  if (!email || !name || !password) {
-    res.status(400).json({ message: "Email, name, and password required" });
+  const { email, firstName, lastName, password } = req.body;
+  if (!email || !firstName || !lastName || !password) {
+    res
+      .status(400)
+      .json({ message: "Email, first name, last name, and password required" });
     return;
   }
   const existing = await UserAccount.findOne({ email });
@@ -83,7 +85,8 @@ export const register = async (req: Request, res: Response) => {
     {
       $set: {
         password: hashed,
-        name,
+        firstName,
+        lastName,
         otp,
         otpExpires,
         isVerified: false,
@@ -188,7 +191,8 @@ export const checkSession = (req: Request, res: Response) => {
     res.status(200).json({
       user: {
         id: sessionUser.id,
-        name: sessionUser.name || sessionUser.email,
+        firstName: sessionUser.firstName,
+        lastName: sessionUser.lastName,
         email: sessionUser.email,
         profileLink: sessionUser.profileLink,
         isVerified: sessionUser.isVerified,

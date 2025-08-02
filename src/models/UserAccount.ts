@@ -22,7 +22,8 @@ export interface IUserAccount extends Document {
   allergens?: string[]; // Array of allergens
   medicalConditions?: string[]; // Array of medical conditions
   dietHistory?: DietHistory[]; // Array of diet history records
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   password?: string;
   otp?: string;
@@ -42,7 +43,8 @@ const UserAccountSchema = new Schema<IUserAccount>({
   allergens: { type: [String], sparse: true },
   medicalConditions: { type: [String], sparse: true },
   gender: { type: String, sparse: true },
-  name: { type: String },
+  firstName: { type: String, sparse: true },
+  lastName: { type: String, sparse: true },
   email: { type: String, unique: true, sparse: true },
   password: { type: String },
   otp: { type: String },
