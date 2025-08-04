@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { json } from "stream/consumers";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
