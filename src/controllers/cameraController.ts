@@ -183,7 +183,6 @@ export async function foodScanHandler(req: Request, res: Response) {
           (f.packageWeight || (f.servingSize && f.servingSizeUnit)) &&
           f.ingredients
         ) {
-          console.log(JSON.stringify(f.foodNutrients, null, 2));
           results.ingredients = f.ingredients;
           results.servingSize = f.packageWeight
             ? f.packageWeight
