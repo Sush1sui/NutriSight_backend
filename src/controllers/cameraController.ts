@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { json } from "stream/consumers";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -48,7 +49,7 @@ export async function barcodeHandler(req: Request, res: Response) {
     const foodNutrients = chunkArray(
       renameNutrition(
         food.foodNutrients
-          .filter((n: any) => n.value >= 0)
+          .filter((n: any) => n.value >= 0.1)
           .map((n: any) => {
             return {
               name: n.nutrientName,
@@ -162,7 +163,7 @@ export async function foodScanHandler(req: Request, res: Response) {
           results.nutrition = chunkArray(
             renameNutrition(
               f.foodNutrients
-                .filter((n: any) => n.value >= 0)
+                .filter((n: any) => n.value >= 0.1)
                 .map((n: any) => {
                   return {
                     name: n.nutrientName,
@@ -177,14 +178,13 @@ export async function foodScanHandler(req: Request, res: Response) {
           break;
         }
       }
-    }
-    if (data.foods && data.foods.length > 0) {
       for (const f of data.foods) {
         if (
           f.dataType === "Branded" &&
           (f.packageWeight || (f.servingSize && f.servingSizeUnit)) &&
           f.ingredients
         ) {
+          console.log(JSON.stringify(f.foodNutrients, null, 2));
           results.ingredients = f.ingredients;
           results.servingSize = f.packageWeight
             ? f.packageWeight
@@ -194,7 +194,6 @@ export async function foodScanHandler(req: Request, res: Response) {
       }
     }
 
-    console.log("Nutrition data:", results.nutrition);
     res.status(200).json({
       message: "Food scan data received successfully",
       data: results,
