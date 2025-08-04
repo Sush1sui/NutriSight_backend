@@ -41,6 +41,8 @@ export async function barcodeHandler(req: Request, res: Response) {
     const data: any = await response.json();
     const food = data?.foods ? data.foods[0] : null;
     if (!food) {
+      console.log("No food found for the barcode:", barcodeData);
+      console.log("Data received:", data);
       res.status(404).json({ error: "No food found for the barcode" });
       return;
     }
