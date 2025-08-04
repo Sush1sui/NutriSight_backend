@@ -48,7 +48,7 @@ export async function barcodeHandler(req: Request, res: Response) {
     const foodNutrients = chunkArray(
       renameNutrition(
         food.foodNutrients
-          .filter((n: any) => n.value !== 0)
+          .filter((n: any) => n.value >= 0)
           .map((n: any) => {
             return {
               name: n.nutrientName,
@@ -162,7 +162,7 @@ export async function foodScanHandler(req: Request, res: Response) {
           results.nutrition = chunkArray(
             renameNutrition(
               f.foodNutrients
-                .filter((n: any) => n.value !== 0)
+                .filter((n: any) => n.value >= 0)
                 .map((n: any) => {
                   return {
                     name: n.nutrientName,
