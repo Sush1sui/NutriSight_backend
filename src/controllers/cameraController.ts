@@ -81,17 +81,19 @@ export async function barcodeHandler(req: Request, res: Response) {
 export async function foodScanHandler(req: Request, res: Response) {
   try {
     if (!req.user) {
+      console.error("User not authenticated");
       res.status(401).json({ message: "User not authenticated" });
       return;
     }
 
     const { image } = req.body;
     if (!image) {
+      console.error("No image provided for food scan");
       res.status(400).json({ message: "No image provided" });
       return;
     }
 
-    // sned image to hugging face for inference api
+    // send image to hugging face for inference api
     const imgBuffer = Buffer.from(image, "base64");
     const hfRes = await fetch(
       "https://api-inference.huggingface.co/models/nateraw/food",
@@ -117,18 +119,84 @@ export async function foodScanHandler(req: Request, res: Response) {
 
     const predictions = (await hfRes.json()) as any[];
     if (!predictions || predictions.length === 0) {
+      console.error("No food items detected in the image");
       res.status(404).json({ error: "No food items detected in the image" });
       return;
     }
 
-    console.log("Predictions:", predictions);
+    if (predictions.length === 0 || predictions[0].score < 0.5) {
+      console.error("No food items predicted close to the image");
+      res
+        .status(404)
+        .json({ error: "No food items predicted close to the image" });
+      return;
+    }
+
+    const response = await fetch(
+      `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(
+        predictions[0].label
+      )}&dataType=Survey (FNDDS),Branded&api_key=${USDA_API_KEY}`
+    );
+
+    if (!response.ok) {
+      console.error("Failed to fetch data from USDA API");
+      res.status(500).json({ error: "Failed to fetch data from USDA API" });
+      return;
+    }
+
+    const data = (await response.json()) as any;
+
+    const results: {
+      nutrition?: any[][][];
+      ingredients?: string;
+      foodName?: string;
+      servingSize?: string;
+    } = {
+      foodName: predictions[0].label,
+    };
+
+    // get the first food with survey dataType
+    if (data.foods && data.foods.length > 0) {
+      for (const f of data.foods) {
+        if (f.dataType === "Survey (FNDDS)") {
+          results.nutrition = chunkArray(
+            renameNutrition(
+              f.foodNutrients
+                .filter((n: any) => n.value !== 0)
+                .map((n: any) => {
+                  return {
+                    name: n.nutrientName,
+                    amount: n.value,
+                    unit: n.unitName,
+                  };
+                })
+            ),
+            6
+          ).map((groupOf6) => chunkArray(groupOf6, 2));
+
+          break;
+        }
+      }
+    }
+    if (data.foods && data.foods.length > 0) {
+      for (const f of data.foods) {
+        if (
+          f.dataType === "Branded" &&
+          (f.packageWeight || (f.servingSize && f.servingSizeUnit)) &&
+          f.ingredients
+        ) {
+          results.ingredients = f.ingredients;
+          results.servingSize = f.packageWeight
+            ? f.packageWeight
+            : `${f.servingSize}${f.servingSizeUnit}`;
+          break;
+        }
+      }
+    }
 
     res.status(200).json({
       message: "Food scan data received successfully",
-      data: predictions.map((pred) => ({
-        name: pred.label,
-        confidence: pred.confidence,
-      })),
+      data: results,
     });
     return;
   } catch (error) {
