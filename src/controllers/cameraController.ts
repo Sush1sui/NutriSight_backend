@@ -33,43 +33,79 @@ export async function barcodeHandler(req: Request, res: Response) {
       }
     );
 
-    if (!response.ok) {
-      res.status(500).json({ error: "Failed to fetch data from USDA API" });
+    if (response.ok) {
+      const data: any = await response.json();
+      const food = data?.foods ? data.foods[0] : null;
+      if (!food) {
+        console.log("No food found for the barcode:", barcodeData);
+        res.status(404).json({ error: "No food found for the barcode" });
+        return;
+      }
+
+      const foodNutrients = chunkArray(
+        renameNutrition(
+          food.foodNutrients
+            .filter((n: any) => n.value >= 0.1)
+            .map((n: any) => {
+              return {
+                name: n.nutrientName,
+                amount: n.value,
+                unit: n.unitName,
+              };
+            })
+        ),
+        6
+      ).map((groupOf6) => chunkArray(groupOf6, 2));
+
+      res.status(200).json({
+        message: "Barcode data received successfully",
+        data: {
+          name: food.description,
+          brand: food.brandOwner,
+          ingredients: food.ingredients,
+          nutrition: foodNutrients, // T[][][]
+          servingSize: `${food.servingSize}${food.servingSizeUnit}`,
+        },
+      });
       return;
     }
 
-    const data: any = await response.json();
-    const food = data?.foods ? data.foods[0] : null;
-    if (!food) {
-      console.log("No food found for the barcode:", barcodeData);
-      console.log("Data received:", data);
-      res.status(404).json({ error: "No food found for the barcode" });
+    // fallback to Open Food Facts if USDA API fails
+    const offResponse = await fetch(
+      `https://world.openfoodfacts.net/api/v2/product/${barcodeData}.json`,
+      {
+        headers: {
+          "User-Agent": "nutrisight-thesis/1.0 - (github.com/Sush1sui)",
+        },
+      }
+    );
+
+    if (!offResponse.ok) {
+      console.error("Failed to fetch data from Open Food Facts API");
+      res.status(500).json({ error: "Failed to fetch data." });
       return;
     }
 
-    const foodNutrients = chunkArray(
-      renameNutrition(
-        food.foodNutrients
-          .filter((n: any) => n.value >= 0.1)
-          .map((n: any) => {
-            return {
-              name: n.nutrientName,
-              amount: n.value,
-              unit: n.unitName,
-            };
-          })
-      ),
-      6
-    ).map((groupOf6) => chunkArray(groupOf6, 2));
+    const offData = (await offResponse.json()) as any;
+    if (!offData.product) {
+      console.log("No product found for the barcode:", barcodeData);
+      res.status(404).json({ error: "No product found for the barcode" });
+      return;
+    }
 
     res.status(200).json({
-      message: "Barcode data received successfully",
+      message: "Barcode data received successfully from Open Food Facts",
       data: {
-        name: food.description,
-        brand: food.brandOwner,
-        ingredients: food.ingredients,
-        nutrition: foodNutrients, // T[][][]
-        servingSize: `${food.servingSize}${food.servingSizeUnit}`,
+        name: offData.product.product_name || "Unknown",
+        brand: offData.product.brands || "Unknown",
+        ingredients: offData.product.ingredients_text || "N/A",
+        nutrition: chunkArray(
+          formatNutriments(offData.product.nutriments).filter(
+            (n: any) => n.amount >= 0.1
+          ),
+          6
+        ).map((groupOf6) => chunkArray(groupOf6, 2)),
+        servingSize: offData.product.serving_size || "N/A",
       },
     });
     return;
@@ -203,6 +239,43 @@ export async function foodScanHandler(req: Request, res: Response) {
     console.error("Error processing food scan:", error);
     res.status(500).json({ message: "Internal server error", error });
   }
+}
+
+function formatNutriments(nutriments: any) {
+  const nutrientList: any = [];
+  // A list of the main nutrient keys we care about
+  const mainNutrients = [
+    "energy-kcal",
+    "fat",
+    "saturated-fat",
+    "trans-fat",
+    "cholesterol",
+    "carbohydrates",
+    "sugars",
+    "fiber",
+    "proteins",
+    "salt",
+    "sodium",
+    "vitamin-a",
+    "vitamin-c",
+    "vitamin-d",
+    "calcium",
+    "iron",
+    "potassium",
+  ];
+
+  mainNutrients.forEach((key) => {
+    // Check if the nutrient exists and has a value
+    if (nutriments[key] !== undefined && nutriments[key] > 0) {
+      nutrientList.push({
+        name: key.replace(/-/g, " "), // Make the name more readable
+        amount: nutriments[key],
+        // The unit is usually in a corresponding key like 'proteins_unit'
+        unit: nutriments[`${key}_unit`] || "g", // Default to 'g' if no unit
+      });
+    }
+  });
+  return nutrientList;
 }
 
 function renameNutrition(arr: any[]) {
