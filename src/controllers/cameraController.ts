@@ -268,7 +268,7 @@ function formatNutriments(nutriments: any) {
     // Check if the nutrient exists and has a value
     if (nutriments[key] !== undefined && nutriments[key] > 0) {
       nutrientList.push({
-        name: key.replace(/-/g, " "), // Make the name more readable
+        name: capitalizeFirstLetter(key.replace(/-/g, " ")), // Make the name more readable
         amount: nutriments[key],
         // The unit is usually in a corresponding key like 'proteins_unit'
         unit: nutriments[`${key}_unit`] || "g", // Default to 'g' if no unit
@@ -325,4 +325,8 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
     result.push(arr.slice(i, i + size));
   }
   return result;
+}
+
+function capitalizeFirstLetter(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
