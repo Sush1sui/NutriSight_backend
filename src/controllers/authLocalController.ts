@@ -255,9 +255,12 @@ export const logout = (req: Request, res: Response) => {
 export const checkSession = (req: Request, res: Response) => {
   if (req.isAuthenticated() && req.user) {
     const sessionUser = req.user as any; // User object from Passport
+
+    const userObj = sessionUser.toObject ? sessionUser.toObject() : sessionUser;
+    delete userObj.password; // Remove password from response
+
     res.status(200).json({
-      user: sessionUser,
-      password: undefined,
+      user: userObj,
     });
   } else {
     // No active session
