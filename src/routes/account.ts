@@ -1,6 +1,9 @@
 import { Router } from "express";
 import upload from "../middleware/cloudinary";
-import { changeProfilePicture } from "../controllers/accountController";
+import {
+  changeProfilePicture,
+  updateAccount,
+} from "../controllers/accountController";
 
 const router = Router();
 
@@ -9,5 +12,7 @@ router.post(
   upload.single("profilePicture"), // field name in form data
   changeProfilePicture
 );
+
+router.post("/update", updateAccount);
 
 export default router;
