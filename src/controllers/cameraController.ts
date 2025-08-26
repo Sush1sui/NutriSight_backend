@@ -340,7 +340,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       .filter(Boolean);
 
     const result = {
-      name: food.food_name,
+      foodName: food.food_name,
       brand: "Generic", // Nutritionix common foods don't have a brand
       servingSize: `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
       ingredients: "N/A (Natural language query)",
