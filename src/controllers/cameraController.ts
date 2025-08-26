@@ -226,6 +226,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
 
     const { foodName } = req.body;
 
+    console.log("Attempting to fetch data from USDA API");
     const usda_response = await fetch(
       `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(
         foodName
@@ -288,6 +289,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       return;
     }
 
+    console.log("Attempting to fetch data from Nutritionix API");
     const nutritionix_response = await fetch(
       "https://trackapi.nutritionix.com/v2",
       {
