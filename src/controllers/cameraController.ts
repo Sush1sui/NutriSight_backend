@@ -197,7 +197,7 @@ export async function foodScanHandler(req: Request, res: Response) {
       return;
     }
 
-    if (predictions.length === 0 || predictions[0].prob < 0.5) {
+    if (predictions.length === 0) {
       console.error("No food items predicted close to the image");
       res
         .status(404)
