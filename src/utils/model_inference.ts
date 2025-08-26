@@ -25,6 +25,13 @@ async function preprocessImageBuffer(
   return floatData;
 }
 
+function softmax(arr: number[]): number[] {
+  const max = Math.max(...arr);
+  const exps = arr.map((x) => Math.exp(x - max));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  return exps.map((x) => x / sum);
+}
+
 /**
  * Classifies an image using an ONNX CNN model.
  * @param imageBuffer Buffer of the image (e.g. from multer or base64 decode)
@@ -50,8 +57,10 @@ export async function classifyImage(
   const results = await session.run(feeds);
   const output = results[outputName].data as Float32Array;
 
-  // Get top-K indices and probabilities
-  const probs = Array.from(output);
+  // Apply softmax to get probabilities
+  const probs = softmax(Array.from(output));
+
+  // Get top-K indices
   const top = probs
     .map((p, i) => ({ prob: p, idx: i }))
     .sort((a, b) => b.prob - a.prob)
