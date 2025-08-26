@@ -282,8 +282,6 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         }
       }
 
-      console.log("USDA results:", results);
-
       if (results.nutrition && results.ingredients && results.servingSize) {
         res.status(200).json({
           message: "Food Data received successfully",
@@ -295,7 +293,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
 
     console.log("Attempting to fetch data from Nutritionix API");
     const nutritionix_response = await fetch(
-      "https://trackapi.nutritionix.com/v2",
+      "https://trackapi.nutritionix.com/v2/natural/nutrients",
       {
         method: "POST",
         headers: {
