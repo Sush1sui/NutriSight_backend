@@ -282,11 +282,15 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         }
       }
 
-      res.status(200).json({
-        message: "Food Data received successfully",
-        data: results,
-      });
-      return;
+      console.log("USDA results:", results);
+
+      if (results.nutrition && results.ingredients && results.servingSize) {
+        res.status(200).json({
+          message: "Food Data received successfully",
+          data: results,
+        });
+        return;
+      }
     }
 
     console.log("Attempting to fetch data from Nutritionix API");
