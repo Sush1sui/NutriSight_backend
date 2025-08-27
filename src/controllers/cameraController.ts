@@ -7,7 +7,10 @@ import {
   renameNutrition,
 } from "../utils/foodCameraUtils";
 import { NUTRITIONIX_NUTRIENT_MAP } from "../utils/nutritionixMap";
-import { predictIngredients } from "../utils/ingredientsPredict";
+import {
+  predictIngredients,
+  predictIngredientsAndNutrition,
+} from "../utils/ingredientsNutritionsPredict";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -314,59 +317,68 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       }
     );
 
-    if (!nutritionix_response.ok) {
-      console.error("Error fetching data from Nutritionix API");
-      res
-        .status(500)
-        .json({ message: "Error fetching data from Nutritionix API" });
+    if (nutritionix_response.ok) {
+      const data: any = await nutritionix_response.json();
+
+      const food = data.foods ? data.foods[0] : null;
+      if (!food) {
+        console.error("No food data found");
+        res.status(404).json({ message: "No food data found" });
+        return;
+      }
+
+      const nutritionData = food.full_nutrients
+        .map((n: { attr_id: number; value: number }) => {
+          const nutrientInfo =
+            NUTRITIONIX_NUTRIENT_MAP[
+              n.attr_id as keyof typeof NUTRITIONIX_NUTRIENT_MAP
+            ];
+          if (nutrientInfo) {
+            return {
+              name: nutrientInfo.name,
+              amount: n.value,
+              unit: nutrientInfo.unit,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      const ingredients = await predictIngredients(foodName);
+      console.log("Predicted ingredients:", ingredients);
+
+      const result = {
+        foodName: food.food_name,
+        brand: "Generic", // Nutritionix common foods don't have a brand
+        servingSize:
+          ingredients.length > 0
+            ? "250g"
+            : `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
+        ingredients:
+          ingredients.length > 0
+            ? ingredients.join(", ")
+            : "N/A (Natural language query)",
+        nutrition: chunkArray(
+          renameNutrition(nutritionData).filter((n) => n.amount >= 0.1),
+          6
+        ).map((groupOf6) => chunkArray(groupOf6, 2)),
+      };
+
+      res.status(200).json({
+        message: "Food Data received successfully",
+        data: result,
+      });
       return;
     }
 
-    const data: any = await nutritionix_response.json();
-
-    const food = data.foods ? data.foods[0] : null;
-    if (!food) {
-      console.error("No food data found");
+    const result = await predictIngredientsAndNutrition(foodName);
+    if (!result) {
+      console.error("Failed to fetch ingredients and nutrition data");
       res.status(404).json({ message: "No food data found" });
       return;
     }
 
-    const nutritionData = food.full_nutrients
-      .map((n: { attr_id: number; value: number }) => {
-        const nutrientInfo =
-          NUTRITIONIX_NUTRIENT_MAP[
-            n.attr_id as keyof typeof NUTRITIONIX_NUTRIENT_MAP
-          ];
-        if (nutrientInfo) {
-          return {
-            name: nutrientInfo.name,
-            amount: n.value,
-            unit: nutrientInfo.unit,
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
-
-    const ingredients = await predictIngredients(foodName);
-    console.log("Predicted ingredients:", ingredients);
-
-    const result = {
-      foodName: food.food_name,
-      brand: "Generic", // Nutritionix common foods don't have a brand
-      servingSize:
-        ingredients.length > 0
-          ? "250g"
-          : `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
-      ingredients:
-        ingredients.length > 0
-          ? ingredients.join(", ")
-          : "N/A (Natural language query)",
-      nutrition: chunkArray(
-        renameNutrition(nutritionData).filter((n) => n.amount >= 0.1),
-        6
-      ).map((groupOf6) => chunkArray(groupOf6, 2)),
-    };
+    console.log("Gemini API response:", result);
 
     res.status(200).json({
       message: "Food Data received successfully",
