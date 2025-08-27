@@ -10,6 +10,7 @@ import { NUTRITIONIX_NUTRIENT_MAP } from "../utils/nutritionixMap";
 import {
   predictIngredients,
   predictIngredientsAndNutrition,
+  scanAllergens,
 } from "../utils/ingredientsNutritionsPredict";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
@@ -272,7 +273,10 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           }
         }
 
-        const ingredients = await predictIngredients(foodName);
+        const ingredients = await scanAllergens(
+          foodName,
+          (req.user as any).allergens
+        );
         console.log("Predicted ingredients:", ingredients);
         if (!ingredients || ingredients.length === 0) {
           for (const f of data.foods) {
@@ -339,7 +343,10 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           })
           .filter(Boolean);
 
-        const ingredients = await predictIngredients(foodName);
+        const ingredients = await scanAllergens(
+          foodName,
+          (req.user as any).allergens
+        );
         console.log("Predicted ingredients:", ingredients);
 
         const result = {
@@ -367,7 +374,10 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       }
     }
 
-    const result = await predictIngredientsAndNutrition(foodName);
+    const result = await predictIngredientsAndNutrition(
+      foodName,
+      (req.user as any).allergens
+    );
     if (!result) {
       console.error("Failed to fetch ingredients and nutrition data");
       res.status(404).json({ message: "No food data found" });

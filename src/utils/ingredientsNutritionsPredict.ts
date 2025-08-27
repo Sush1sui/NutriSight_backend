@@ -30,14 +30,50 @@ export async function predictIngredients(foodName: string): Promise<string[]> {
   return text.split(",").map((i: string) => i.trim());
 }
 
-export async function predictIngredientsAndNutrition(
+export async function scanAllergens(
   foodName: string,
+  userAllergens: string[]
+): Promise<string[]> {
+  const prompt = `List the most common ingredients in ${foodName}. Only list the ingredients, separated by commas.`;
+  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+    }),
+  });
+  if (!response.ok) {
+    console.error("Error from Gemini API:", await response.text());
+    throw new Error("Failed to fetch ingredients from Gemini API");
+  }
+  const data: any = await response.json();
+  if (!data.candidates || !data.candidates[0]?.content?.parts[0]?.text) {
+    console.error("Unexpected Gemini API response:", data);
+    throw new Error("Invalid response from Gemini API");
+  }
+  const text = data.candidates[0].content.parts[0].text;
+  const ingredients = text
+    .split(",")
+    .map((i: string) => i.trim().toLowerCase());
+
+  // Check which allergens are present in the ingredients
+  const triggeredAllergens = userAllergens
+    .map((a) => a.trim().toLowerCase())
+    .filter((a) => ingredients.includes(a));
+
+  return triggeredAllergens;
+}
+export async function predictAllergensAndNutrition(
+  foodName: string,
+  userAllergens: string[],
   servingSize: string = "250g"
-): Promise<{ ingredients: string[]; nutrition: Record<string, string> }> {
+): Promise<{ allergens: string[]; nutrition: Record<string, string> }> {
   const prompt = `
 For the food "${foodName}", list:
 1. The most common ingredients (comma-separated).
-2. The estimated nutrition facts for a fixed serving size of ${servingSize}, including calories, protein, fat, carbohydrates, and fiber. 
+2. The estimated nutrition facts for a fixed serving size of ${servingSize}, including calories, protein, fat, carbohydrates, and fiber.
 Format your response as:
 Ingredients: ingredient1, ingredient2, ingredient3, ...
 Nutrition:
@@ -74,8 +110,13 @@ Fiber: X g
   // Parse ingredients
   const ingredientsMatch = text.match(/Ingredients:\s*(.+)/i);
   const ingredients = ingredientsMatch
-    ? ingredientsMatch[1].split(",").map((i: string) => i.trim())
+    ? ingredientsMatch[1].split(",").map((i: string) => i.trim().toLowerCase())
     : [];
+
+  // Find triggered allergens
+  const allergens = userAllergens
+    .map((a) => a.trim().toLowerCase())
+    .filter((a) => ingredients.includes(a));
 
   // Parse nutrition
   const nutrition: Record<string, string> = {};
@@ -88,5 +129,5 @@ Fiber: X g
     });
   }
 
-  return { ingredients, nutrition };
+  return { allergens, nutrition };
 }
