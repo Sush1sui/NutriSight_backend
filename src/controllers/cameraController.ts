@@ -385,15 +385,19 @@ export async function getFoodDataHandler(req: Request, res: Response) {
 
     console.log("Gemini API response:", result);
 
+    const formattedNutrition = chunkArray(
+      renameNutrition(result.nutrition).filter((n) => n.amount >= 0.1),
+      6
+    ).map((groupOf6) => chunkArray(groupOf6, 2));
+
+    console.log("Formatted nutrition data:", formattedNutrition);
+
     res.status(200).json({
       message: "Food Data received successfully",
       data: {
         foodName,
         ingredients: result.allergens,
-        nutrition: chunkArray(
-          renameNutrition(result.nutrition).filter((n) => n.amount >= 0.1),
-          6
-        ).map((groupOf6) => chunkArray(groupOf6, 2)),
+        nutrition: formattedNutrition,
       },
     });
     return;
