@@ -292,7 +292,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
             }
           }
         } else {
-          results.ingredients = ingredients.join(", ");
+          results.ingredients = ingredients.join(",");
           results.servingSize = "250g";
         }
       }
@@ -357,7 +357,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
               : `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
           ingredients:
             ingredients.length > 0
-              ? ingredients.join(", ")
+              ? ingredients.join(",")
               : "N/A (Natural language query)",
           nutrition: chunkArray(
             renameNutrition(nutritionData).filter((n) => n.amount >= 0.1),
@@ -383,21 +383,16 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       return;
     }
 
-    console.log("Gemini API response:", result);
-
-    const formattedNutrition = chunkArray(
-      renameNutrition(result.nutrition).filter((n) => n.amount >= 0.1),
-      6
-    ).map((groupOf6) => chunkArray(groupOf6, 2));
-
-    console.log("Formatted nutrition data:", formattedNutrition);
-
+    // console.log("Gemini API response:", result);
     res.status(200).json({
       message: "Food Data received successfully",
       data: {
         foodName,
-        ingredients: result.allergens,
-        nutrition: formattedNutrition,
+        ingredients: result.allergens.join(","),
+        nutrition: chunkArray(
+          renameNutrition(result.nutrition).filter((n) => n.amount >= 0.1),
+          6
+        ).map((groupOf6) => chunkArray(groupOf6, 2)),
       },
     });
     return;
