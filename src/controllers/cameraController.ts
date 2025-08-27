@@ -321,54 +321,50 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       const data: any = await nutritionix_response.json();
 
       const food = data.foods ? data.foods[0] : null;
-      if (!food) {
-        console.error("No food data found");
-        res.status(404).json({ message: "No food data found" });
+      if (food) {
+        const nutritionData = food.full_nutrients
+          .map((n: { attr_id: number; value: number }) => {
+            const nutrientInfo =
+              NUTRITIONIX_NUTRIENT_MAP[
+                n.attr_id as keyof typeof NUTRITIONIX_NUTRIENT_MAP
+              ];
+            if (nutrientInfo) {
+              return {
+                name: nutrientInfo.name,
+                amount: n.value,
+                unit: nutrientInfo.unit,
+              };
+            }
+            return null;
+          })
+          .filter(Boolean);
+
+        const ingredients = await predictIngredients(foodName);
+        console.log("Predicted ingredients:", ingredients);
+
+        const result = {
+          foodName: food.food_name,
+          brand: "Generic", // Nutritionix common foods don't have a brand
+          servingSize:
+            ingredients.length > 0
+              ? "250g"
+              : `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
+          ingredients:
+            ingredients.length > 0
+              ? ingredients.join(", ")
+              : "N/A (Natural language query)",
+          nutrition: chunkArray(
+            renameNutrition(nutritionData).filter((n) => n.amount >= 0.1),
+            6
+          ).map((groupOf6) => chunkArray(groupOf6, 2)),
+        };
+
+        res.status(200).json({
+          message: "Food Data received successfully",
+          data: result,
+        });
         return;
       }
-
-      const nutritionData = food.full_nutrients
-        .map((n: { attr_id: number; value: number }) => {
-          const nutrientInfo =
-            NUTRITIONIX_NUTRIENT_MAP[
-              n.attr_id as keyof typeof NUTRITIONIX_NUTRIENT_MAP
-            ];
-          if (nutrientInfo) {
-            return {
-              name: nutrientInfo.name,
-              amount: n.value,
-              unit: nutrientInfo.unit,
-            };
-          }
-          return null;
-        })
-        .filter(Boolean);
-
-      const ingredients = await predictIngredients(foodName);
-      console.log("Predicted ingredients:", ingredients);
-
-      const result = {
-        foodName: food.food_name,
-        brand: "Generic", // Nutritionix common foods don't have a brand
-        servingSize:
-          ingredients.length > 0
-            ? "250g"
-            : `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
-        ingredients:
-          ingredients.length > 0
-            ? ingredients.join(", ")
-            : "N/A (Natural language query)",
-        nutrition: chunkArray(
-          renameNutrition(nutritionData).filter((n) => n.amount >= 0.1),
-          6
-        ).map((groupOf6) => chunkArray(groupOf6, 2)),
-      };
-
-      res.status(200).json({
-        message: "Food Data received successfully",
-        data: result,
-      });
-      return;
     }
 
     const result = await predictIngredientsAndNutrition(foodName);
