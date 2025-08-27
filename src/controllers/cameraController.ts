@@ -304,7 +304,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           }
         } else {
           results.ingredients = ingredients.join(",");
-          results.servingSize = "250g";
+          results.servingSize = "150g";
         }
       }
 
@@ -367,7 +367,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           brand: "Generic", // Nutritionix common foods don't have a brand
           servingSize:
             ingredients.length > 0
-              ? "250g"
+              ? "150g"
               : `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
           ingredients:
             ingredients.length > 0
@@ -404,6 +404,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       message: "Food Data received successfully",
       data: {
         foodName,
+        servingSize: "150g",
         ingredients: result.allergens.join(","),
         nutrition: chunkArray(
           renameNutrition(convertToGrams(result.nutrition)).filter(

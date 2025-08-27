@@ -45,7 +45,7 @@ export async function scanAllergens(
 export async function predictAllergensAndNutrition(
   foodName: string,
   userAllergens: string[],
-  servingSize: string = "250g"
+  servingSize: string = "150g"
 ): Promise<{
   allergens: string[];
   nutrition: Array<{ name: string; amount: number; unit: string }>;
