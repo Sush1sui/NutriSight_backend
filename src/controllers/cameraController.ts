@@ -389,7 +389,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       message: "Food Data received successfully",
       data: {
         foodName,
-        allergens: result.allergens,
+        ingredients: result.allergens,
         nutrition: chunkArray(
           renameNutrition(result.nutrition).filter((n) => n.amount >= 0.1),
           6
