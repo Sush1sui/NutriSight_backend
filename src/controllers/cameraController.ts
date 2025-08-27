@@ -390,7 +390,10 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       data: {
         foodName,
         allergens: result.allergens,
-        nutrition: result.nutrition,
+        nutrition: chunkArray(
+          renameNutrition(result.nutrition).filter((n) => n.amount >= 0.1),
+          6
+        ).map((groupOf6) => chunkArray(groupOf6, 2)),
       },
     });
     return;
