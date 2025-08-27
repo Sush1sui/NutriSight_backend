@@ -8,8 +8,7 @@ import {
 } from "../utils/foodCameraUtils";
 import { NUTRITIONIX_NUTRIENT_MAP } from "../utils/nutritionixMap";
 import {
-  predictIngredients,
-  predictIngredientsAndNutrition,
+  predictAllergensAndNutrition,
   scanAllergens,
 } from "../utils/ingredientsNutritionsPredict";
 
@@ -374,7 +373,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       }
     }
 
-    const result = await predictIngredientsAndNutrition(
+    const result = await predictAllergensAndNutrition(
       foodName,
       (req.user as any).allergens
     );
