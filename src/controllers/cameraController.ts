@@ -387,7 +387,11 @@ export async function getFoodDataHandler(req: Request, res: Response) {
 
     res.status(200).json({
       message: "Food Data received successfully",
-      data: result,
+      data: {
+        foodName,
+        allergens: result.allergens,
+        nutrition: result.nutrition,
+      },
     });
     return;
   } catch (error) {

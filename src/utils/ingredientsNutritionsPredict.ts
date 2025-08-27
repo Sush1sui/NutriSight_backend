@@ -65,11 +65,15 @@ export async function scanAllergens(
 
   return triggeredAllergens;
 }
+
 export async function predictAllergensAndNutrition(
   foodName: string,
   userAllergens: string[],
   servingSize: string = "250g"
-): Promise<{ allergens: string[]; nutrition: Record<string, string> }> {
+): Promise<{
+  allergens: string[];
+  nutrition: Array<{ name: string; amount: number; unit: string }>;
+}> {
   const prompt = `
 For the food "${foodName}", list:
 1. The most common ingredients (comma-separated).
@@ -118,14 +122,24 @@ Fiber: X g
     .map((a) => a.trim().toLowerCase())
     .filter((a) => ingredients.includes(a));
 
-  // Parse nutrition
-  const nutrition: Record<string, string> = {};
+  // Parse nutrition as array of objects
+  const nutrition: Array<{ name: string; amount: number; unit: string }> = [];
   const nutritionMatch = text.match(/Nutrition:\s*([\s\S]*)/i);
   if (nutritionMatch) {
     const lines = nutritionMatch[1].split("\n");
-    lines.forEach((line: any) => {
-      const [key, value] = line.split(":").map((s: any) => s.trim());
-      if (key && value) nutrition[key] = value;
+    lines.forEach((line: string) => {
+      const [key, value] = line.split(":").map((s) => s.trim());
+      if (key && value) {
+        // Try to extract amount and unit
+        const match = value.match(/([\d.]+)\s*(\w+)/);
+        if (match) {
+          nutrition.push({
+            name: key.toLowerCase(),
+            amount: parseFloat(match[1]),
+            unit: match[2],
+          });
+        }
+      }
     });
   }
 
