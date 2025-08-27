@@ -7,6 +7,7 @@ import {
   renameNutrition,
 } from "../utils/foodCameraUtils";
 import { NUTRITIONIX_NUTRIENT_MAP } from "../utils/nutritionixMap";
+import { predictIngredients } from "../utils/ingredientsPredict";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -267,18 +268,26 @@ export async function getFoodDataHandler(req: Request, res: Response) {
             break;
           }
         }
-        for (const f of data.foods) {
-          if (
-            f.dataType === "Branded" &&
-            (f.packageWeight || (f.servingSize && f.servingSizeUnit)) &&
-            f.ingredients
-          ) {
-            results.ingredients = f.ingredients;
-            results.servingSize = f.packageWeight
-              ? f.packageWeight
-              : `${f.servingSize}${f.servingSizeUnit}`;
-            break;
+
+        const ingredients = await predictIngredients(foodName);
+        console.log("Predicted ingredients:", ingredients);
+        if (!ingredients || ingredients.length === 0) {
+          for (const f of data.foods) {
+            if (
+              f.dataType === "Branded" &&
+              (f.packageWeight || (f.servingSize && f.servingSizeUnit)) &&
+              f.ingredients
+            ) {
+              results.ingredients = f.ingredients;
+              results.servingSize = f.packageWeight
+                ? f.packageWeight
+                : `${f.servingSize}${f.servingSizeUnit}`;
+              break;
+            }
           }
+        } else {
+          results.ingredients = ingredients.join(", ");
+          results.servingSize = "250g";
         }
       }
 
@@ -339,11 +348,20 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       })
       .filter(Boolean);
 
+    const ingredients = await predictIngredients(foodName);
+    console.log("Predicted ingredients:", ingredients);
+
     const result = {
       foodName: food.food_name,
       brand: "Generic", // Nutritionix common foods don't have a brand
-      servingSize: `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
-      ingredients: "N/A (Natural language query)",
+      servingSize:
+        ingredients.length > 0
+          ? "250g"
+          : `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
+      ingredients:
+        ingredients.length > 0
+          ? ingredients.join(", ")
+          : "N/A (Natural language query)",
       nutrition: chunkArray(
         renameNutrition(nutritionData).filter((n) => n.amount >= 0.1),
         6
