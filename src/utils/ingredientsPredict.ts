@@ -21,6 +21,11 @@ export async function predictIngredients(foodName: string): Promise<string[]> {
     console.error("Error from Gemini API:", await response.text());
     throw new Error("Failed to fetch ingredients from Gemini API");
   }
-  const text = (response as any).data.candidates[0].content.parts[0].text;
+  const data: any = await response.json();
+  if (!data.candidates || !data.candidates[0]?.content?.parts[0]?.text) {
+    console.error("Unexpected Gemini API response:", data);
+    throw new Error("Invalid response from Gemini API");
+  }
+  const text = data.candidates[0].content.parts[0].text;
   return text.split(",").map((i: string) => i.trim());
 }
