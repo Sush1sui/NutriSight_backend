@@ -26,6 +26,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@google/genai": "^1.15.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^1.30.0",
     "connect-mongo": "^5.1.0",

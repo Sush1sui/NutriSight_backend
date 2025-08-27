@@ -1,32 +1,21 @@
-const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+import { GoogleGenAI } from "@google/genai";
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY is not set in the environment variables.");
   process.exit(1);
 }
 
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
 export async function predictIngredients(foodName: string): Promise<string[]> {
   const prompt = `List the most common ingredients in ${foodName}. Only list the ingredients, separated by commas.`;
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-    }),
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-lite",
+    contents: prompt,
   });
-  if (!response.ok) {
-    console.error("Error from Gemini API:", await response.text());
-    throw new Error("Failed to fetch ingredients from Gemini API");
-  }
-  const data: any = await response.json();
-  if (!data.candidates || !data.candidates[0]?.content?.parts[0]?.text) {
-    console.error("Unexpected Gemini API response:", data);
-    throw new Error("Invalid response from Gemini API");
-  }
-  const text = data.candidates[0].content.parts[0].text;
+
+  const text = response.text ?? "";
   return text.split(",").map((i: string) => i.trim());
 }
 
@@ -35,25 +24,12 @@ export async function scanAllergens(
   userAllergens: string[]
 ): Promise<string[]> {
   const prompt = `List the most common ingredients in ${foodName}. Only list the ingredients, separated by commas.`;
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-    }),
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-lite",
+    contents: prompt,
   });
-  if (!response.ok) {
-    console.error("Error from Gemini API:", await response.text());
-    throw new Error("Failed to fetch ingredients from Gemini API");
-  }
-  const data: any = await response.json();
-  if (!data.candidates || !data.candidates[0]?.content?.parts[0]?.text) {
-    console.error("Unexpected Gemini API response:", data);
-    throw new Error("Invalid response from Gemini API");
-  }
-  const text = data.candidates[0].content.parts[0].text;
+
+  const text = response.text ?? "";
   const ingredients = text
     .split(",")
     .map((i: string) => i.trim().toLowerCase());
@@ -88,28 +64,14 @@ Carbohydrates: X g
 Fiber: X g
 `;
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-    }),
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-lite",
+    contents: prompt,
+    // Optionally, you can add config here
+    // config: { thinkingConfig: { thinkingBudget: 0 } }
   });
 
-  if (!response.ok) {
-    console.error("Error from Gemini API:", await response.text());
-    throw new Error("Failed to fetch data from Gemini API");
-  }
-
-  const data: any = await response.json();
-  if (!data.candidates || !data.candidates[0]?.content?.parts[0]?.text) {
-    console.error("Unexpected Gemini API response:", data);
-    throw new Error("Invalid response from Gemini API");
-  }
-
-  const text = data.candidates[0].content.parts[0].text;
+  const text = response.text ?? "";
 
   // Parse ingredients
   const ingredientsMatch = text.match(/Ingredients:\s*(.+)/i);
@@ -130,7 +92,6 @@ Fiber: X g
     lines.forEach((line: string) => {
       const [key, value] = line.split(":").map((s) => s.trim());
       if (key && value) {
-        // Try to extract amount and unit
         const match = value.match(/([\d.]+)\s*(\w+)/);
         if (match) {
           nutrition.push({
