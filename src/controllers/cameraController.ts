@@ -70,8 +70,9 @@ export async function barcodeHandler(req: Request, res: Response) {
       return;
     }
 
-    const data: any = await response.json();
+    let data: any = await response.json();
     const food = data?.foods ? data.foods[0] : null;
+    data = null;
     if (food) {
       const foodNutrients = chunkArray(
         convertToGrams(
@@ -164,7 +165,10 @@ export async function foodScanHandler(req: Request, res: Response) {
       return;
     }
 
-    const imgBuffer = Buffer.from(image, "base64");
+    let imgBuffer: Buffer<ArrayBufferLike> | null = Buffer.from(
+      image,
+      "base64"
+    );
 
     // send image to hugging face for inference api
     // const hfRes = await fetch(
@@ -197,6 +201,8 @@ export async function foodScanHandler(req: Request, res: Response) {
       classNames,
       5
     );
+
+    imgBuffer = null;
 
     if (!predictions || predictions.length === 0) {
       console.error("No food items detected in the image");
@@ -241,7 +247,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
     );
 
     if (usda_response.ok) {
-      const data = (await usda_response.json()) as any;
+      let data = (await usda_response.json()) as any;
 
       const results: {
         nutrition?: any[][][];
@@ -302,6 +308,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         }
       }
 
+      data = null;
+
       if (results.nutrition && results.ingredients && results.servingSize) {
         res.status(200).json({
           message: "Food Data received successfully",
@@ -326,9 +334,10 @@ export async function getFoodDataHandler(req: Request, res: Response) {
     );
 
     if (nutritionix_response.ok) {
-      const data: any = await nutritionix_response.json();
+      let data: any = await nutritionix_response.json();
 
       const food = data.foods ? data.foods[0] : null;
+      data = null;
       if (food) {
         const nutritionData = food.full_nutrients
           .map((n: { attr_id: number; value: number }) => {
@@ -366,7 +375,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
               : "N/A (Natural language query)",
           nutrition: chunkArray(
             renameNutrition(convertToGrams(nutritionData)).filter(
-              (n) => n.amount >= 0.1 && n.unit === "g"
+              (n) => n.amount >= 0.1
             ),
             6
           ).map((groupOf6) => chunkArray(groupOf6, 2)),
@@ -398,7 +407,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         ingredients: result.allergens.join(","),
         nutrition: chunkArray(
           renameNutrition(convertToGrams(result.nutrition)).filter(
-            (n) => n.amount >= 0.1 && n.unit === "g"
+            (n) => n.amount >= 0.1
           ),
           6
         ).map((groupOf6) => chunkArray(groupOf6, 2)),
