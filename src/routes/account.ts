@@ -13,6 +13,6 @@ router.post(
   changeProfilePicture
 );
 
-router.post("/update", updateAccount);
+router.put("/update", updateAccount);
 
 export default router;

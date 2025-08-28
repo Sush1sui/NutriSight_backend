@@ -14,7 +14,7 @@ export interface IUserAccount extends Document {
   profileLink?: string;
   profilePublicId?: string; // Optional field for public profile ID
   gender?: string;
-  age?: number; // Age in years
+  birthDate?: Date;
   height?: number; // in feet
   weight?: number; // in kg
   targetWeight?: number; // in kg
@@ -36,7 +36,7 @@ const UserAccountSchema = new Schema<IUserAccount>({
   gmailId: { type: String, unique: true, sparse: true },
   profileLink: { type: String, sparse: true },
   profilePublicId: { type: String, sparse: true }, // Optional field for public profile ID
-  age: { type: Number, sparse: true }, // Age in years
+  birthDate: { type: Date, sparse: true },
   height: { type: Number, sparse: true }, // in feet
   weight: { type: Number, sparse: true }, // in kg
   targetWeight: { type: Number, sparse: true }, // in kg

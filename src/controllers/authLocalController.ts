@@ -140,9 +140,10 @@ export const verifyOtp = async (req: Request, res: Response) => {
 };
 
 export const onboardingSubmit = async (req: Request, res: Response) => {
-  const { name, allergens, gender, age, height, weight, email } = req.body;
+  const { name, allergens, gender, birthDate, height, weight, email } =
+    req.body;
 
-  if (!name || !allergens || !gender || !age || !height || !weight) {
+  if (!name || !allergens || !gender || !birthDate || !height || !weight) {
     res.status(400).json({ message: "All fields are required" });
     return;
   }
@@ -167,7 +168,7 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
   user.name = name;
   user.allergens = allergens;
   user.gender = gender;
-  user.age = age;
+  user.birthDate = birthDate;
   user.height = height;
   user.weight = weight;
   user.bmi = weight / (height * 0.3048) ** 2; // Calculate BMI
