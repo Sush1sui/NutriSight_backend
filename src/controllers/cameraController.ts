@@ -3,8 +3,8 @@ import { classifyImage } from "../utils/model_inference";
 import * as fs from "fs";
 import {
   chunkArray,
-  filterStandardNutrients,
   formatNutriments,
+  renameNutrition,
 } from "../utils/foodCameraUtils";
 import { NUTRITIONIX_NUTRIENT_MAP } from "../utils/nutritionixMap";
 import {
@@ -75,8 +75,8 @@ export async function barcodeHandler(req: Request, res: Response) {
     data = null;
     if (food) {
       const foodNutrients = chunkArray(
-        filterStandardNutrients(
-          convertToGrams(
+        convertToGrams(
+          renameNutrition(
             food.foodNutrients
               .filter((n: any) => n.value >= 0.1)
               .map((n: any) => {
@@ -134,10 +134,8 @@ export async function barcodeHandler(req: Request, res: Response) {
         brand: offData.product.brands || "Unknown",
         ingredients: offData.product.ingredients_text || "N/A",
         nutrition: chunkArray(
-          filterStandardNutrients(
-            convertToGrams(formatNutriments(offData.product.nutriments)).filter(
-              (n: any) => n.amount >= 0.1
-            )
+          convertToGrams(formatNutriments(offData.product.nutriments)).filter(
+            (n: any) => n.amount >= 0.1
           ),
           6
         ).map((groupOf6) => chunkArray(groupOf6, 2)),
@@ -264,10 +262,9 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       if (data.foods && data.foods.length > 0) {
         for (const f of data.foods) {
           if (f.dataType === "Survey (FNDDS)") {
-            console.log("Raw USDA nutrition:", f.foodNutrients);
             results.nutrition = chunkArray(
-              filterStandardNutrients(
-                convertToGrams(
+              convertToGrams(
+                renameNutrition(
                   f.foodNutrients
                     .filter((n: any) => n.value >= 0.1)
                     .map((n: any) => {
@@ -312,8 +309,6 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       }
 
       data = null;
-
-      console.log("USDA API results:", results);
 
       if (results.nutrition && results.ingredients && results.servingSize) {
         res.status(200).json({
@@ -379,15 +374,12 @@ export async function getFoodDataHandler(req: Request, res: Response) {
               ? ingredients.join(",")
               : "N/A (Natural language query)",
           nutrition: chunkArray(
-            filterStandardNutrients(convertToGrams(nutritionData)).filter(
+            renameNutrition(convertToGrams(nutritionData)).filter(
               (n) => n.amount >= 0.1
             ),
             6
           ).map((groupOf6) => chunkArray(groupOf6, 2)),
         };
-
-        console.log("Raw nutrition:", nutritionData);
-        console.log("Nutritionix API results:", result);
 
         res.status(200).json({
           message: "Food Data received successfully",
@@ -407,21 +399,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       return;
     }
 
-    const dataResult = {
-      foodName,
-      servingSize: "150g",
-      ingredients: result.allergens.join(","),
-      nutrition: chunkArray(
-        filterStandardNutrients(convertToGrams(result.nutrition)).filter(
-          (n) => n.amount >= 0.1
-        ),
-        6
-      ).map((groupOf6) => chunkArray(groupOf6, 2)),
-    };
-
-    console.log("Raw predicted nutrition:", result.nutrition);
-    console.log("Predicted ingredients and nutrition:", dataResult);
-
+    // console.log("Gemini API response:", result);
     res.status(200).json({
       message: "Food Data received successfully",
       data: {
@@ -429,7 +407,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         servingSize: "150g",
         ingredients: result.allergens.join(","),
         nutrition: chunkArray(
-          filterStandardNutrients(convertToGrams(result.nutrition)).filter(
+          renameNutrition(convertToGrams(result.nutrition)).filter(
             (n) => n.amount >= 0.1
           ),
           6

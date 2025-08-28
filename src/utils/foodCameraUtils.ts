@@ -1,127 +1,40 @@
-const STANDARD_NUTRIENTS = {
-  calories: "Calories",
-  "total fat": "Total Fat",
-  "saturated fat": "Saturated Fat",
-  "trans fat": "Trans Fat",
-  "monounsaturated fat": "Monounsaturated Fat",
-  "polyunsaturated fat": "Polyunsaturated Fat",
-  cholesterol: "Cholesterol",
-  sodium: "Sodium",
-  "total carbohydrates": "Total Carbohydrates",
-  "net carbs": "Net Carbs",
-  "dietary fiber": "Dietary Fiber",
-  sugars: "Sugars",
-  protein: "Protein",
-  "vitamin a": "Vitamin A",
-  calcium: "Calcium",
-  iron: "Iron",
-  potassium: "Potassium",
-};
-
-// Map all possible synonyms to the standard key
-const synonymMap: Record<string, string> = {
-  energy: "Calories",
-  "energy-kcal": "Calories",
-  "energy (kcal)": "Calories",
-  calories: "Calories",
-  fat: "Total Fat",
-  "total fat": "Total Fat",
-  "fatty acids, total saturated": "Saturated Fat",
-  "saturated fat": "Saturated Fat",
-  "fatty acids, total trans": "Trans Fat",
-  "trans fat": "Trans Fat",
-  "fatty acids, total monounsaturated": "Monounsaturated Fat",
-  "monounsaturated fat": "Monounsaturated Fat",
-  "fatty acids, total polyunsaturated": "Polyunsaturated Fat",
-  "polyunsaturated fat": "Polyunsaturated Fat",
-  cholesterol: "Cholesterol",
-  sodium: "Sodium",
-  salt: "Sodium",
-  "total carbohydrate": "Total Carbohydrates",
-  "total carbohydrates": "Total Carbohydrates",
-  "carbohydrate, by difference": "Total Carbohydrates",
-  carbohydrates: "Total Carbohydrates",
-  "net carbs": "Net Carbs",
-  "fiber, total dietary": "Dietary Fiber",
-  "dietary fiber": "Dietary Fiber",
-  fiber: "Dietary Fiber",
-  sugars: "Sugars",
-  sugar: "Sugars",
-  protein: "Protein",
-  proteins: "Protein",
-  "vitamin a": "Vitamin A",
-  "vitamin a, iu": "Vitamin A",
-  calcium: "Calcium",
-  "calcium, ca": "Calcium",
-  iron: "Iron",
-  "iron, fe": "Iron",
-  potassium: "Potassium",
-  "potassium, k": "Potassium",
-  // Add more as needed
-};
-
-export function filterStandardNutrients(arr: any[]) {
-  return arr
-    .map((item: any) => {
-      // Normalize the name
-      let name = (item.name || "")
-        .toLowerCase()
-        .replace(/-/g, " ")
-        .replace(/\,.*$/, "")
-        .trim();
-      // Map synonym to standard key
-      const standardKey = synonymMap[name];
-      if (
-        standardKey &&
-        STANDARD_NUTRIENTS[standardKey as keyof typeof STANDARD_NUTRIENTS]
-      ) {
-        return {
-          ...item,
-          name: standardKey,
-        };
-      }
-      return null;
-    })
-    .filter((item) => item !== null);
-}
-
 export function renameNutrition(arr: any[]) {
   return arr.map((item: any) => {
-    const lower = (item.name || "").toLowerCase();
     if (
-      ["energy", "energy-kcal", "energy (kcal)", "calories"].includes(lower)
+      (item.name as string).toLowerCase() === "fatty acids, total saturated"
     ) {
-      return { ...item, name: "calories" };
+      return { ...item, name: "Saturated Fats" };
     }
-    if (["protein"].includes(lower)) return { ...item, name: "protein" };
-    if (["total fat", "fat"].includes(lower))
-      return { ...item, name: "total fat" };
-    if (["saturated fat", "fatty acids, total saturated"].includes(lower))
-      return { ...item, name: "saturated fat" };
-    if (["trans fat", "fatty acids, total trans"].includes(lower))
-      return { ...item, name: "trans fat" };
-    if (["cholesterol"].includes(lower))
-      return { ...item, name: "cholesterol" };
-    if (["sodium"].includes(lower)) return { ...item, name: "sodium" };
+    if ((item.name as string).toLowerCase() === "fatty acids, total trans") {
+      return { ...item, name: "Trans Fats" };
+    }
     if (
-      [
-        "total carbohydrate",
-        "total carbohydrates",
-        "carbohydrate, by difference",
-      ].includes(lower)
-    )
-      return { ...item, name: "total carbohydrates" };
-    if (["dietary fiber", "fiber, total dietary"].includes(lower))
-      return { ...item, name: "dietary fiber" };
-    if (["sugars", "sugar"].includes(lower)) return { ...item, name: "sugars" };
-    if (["vitamin a", "vitamin a, iu"].includes(lower))
-      return { ...item, name: "vitamin a" };
-    if (["calcium", "calcium, ca"].includes(lower))
-      return { ...item, name: "calcium" };
-    if (["iron", "iron, fe"].includes(lower)) return { ...item, name: "iron" };
-    if (["potassium", "potassium, k"].includes(lower))
-      return { ...item, name: "potassium" };
-    // ...add more mappings as needed
+      (item.name as string).toLowerCase() ===
+      "vitamin d (d2 + d3), international units"
+    ) {
+      return { ...item, name: "Vitamin D2 + D3" };
+    }
+    if ((item.name as string).toLowerCase() === "potassium, k") {
+      return { ...item, name: "Potassium" };
+    }
+    if ((item.name as string).toLowerCase() === "sodium, na") {
+      return { ...item, name: "Sodium" };
+    }
+    if ((item.name as string).toLowerCase() === "calcium, ca") {
+      return { ...item, name: "Calcium" };
+    }
+    if ((item.name as string).toLowerCase() === "iron, fe") {
+      return { ...item, name: "Iron" };
+    }
+    if ((item.name as string).toLowerCase() === "fiber, total dietary") {
+      return { ...item, name: "Dietary Fiber" };
+    }
+    if ((item.name as string).toLowerCase() === "total sugars") {
+      return { ...item, name: "Sugar" };
+    }
+    if ((item.name as string).toLowerCase() === "carbohydrate, by difference") {
+      return { ...item, name: "Carbohydrates" };
+    }
     return item;
   });
 }
