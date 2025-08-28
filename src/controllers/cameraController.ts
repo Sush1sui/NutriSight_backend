@@ -266,19 +266,17 @@ export async function getFoodDataHandler(req: Request, res: Response) {
             results.nutrition = chunkArray(
               convertToGrams(
                 renameNutrition(
-                  f.foodNutrients
-                    .filter((n: any) => n.value >= 0.1)
-                    .map((n: any) => {
-                      return {
-                        name: n.nutrientName,
-                        amount: n.value,
-                        unit: n.unitName,
-                      };
-                    })
+                  f.foodNutrients.map((n: any) => {
+                    return {
+                      name: n.nutrientName,
+                      amount: n.value,
+                      unit: n.unitName,
+                    };
+                  })
                 ).filter((i) =>
                   STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
                 )
-              ),
+              ).filter((n: any) => n.value >= 0.1),
               6
             ).map((groupOf6) => chunkArray(groupOf6, 2));
 
@@ -377,11 +375,11 @@ export async function getFoodDataHandler(req: Request, res: Response) {
               ? ingredients.join(",")
               : "N/A (Natural language query)",
           nutrition: chunkArray(
-            renameNutrition(convertToGrams(nutritionData))
-              .filter((n) => n.amount >= 0.1)
-              .filter((i) =>
-                STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
-              ),
+            renameNutrition(
+              convertToGrams(nutritionData).filter((n) => n.amount >= 0.1)
+            ).filter((i) =>
+              STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
+            ),
             6
           ).map((groupOf6) => chunkArray(groupOf6, 2)),
         };
@@ -412,11 +410,11 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         servingSize: "150g",
         ingredients: result.allergens.join(","),
         nutrition: chunkArray(
-          renameNutrition(convertToGrams(result.nutrition))
-            .filter((n) => n.amount >= 0.1)
-            .filter((i) =>
-              STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
-            ),
+          renameNutrition(
+            convertToGrams(result.nutrition).filter((n) => n.amount >= 0.1)
+          ).filter((i) =>
+            STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
+          ),
           6
         ).map((groupOf6) => chunkArray(groupOf6, 2)),
       },
