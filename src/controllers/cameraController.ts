@@ -311,6 +311,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       }
 
       data = null;
+
+      console.log("Raw USDA nutrition:", results.nutrition);
       console.log("USDA API results:", results);
 
       if (results.nutrition && results.ingredients && results.servingSize) {
@@ -384,6 +386,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           ).map((groupOf6) => chunkArray(groupOf6, 2)),
         };
 
+        console.log("Raw nutrition:", nutritionData);
         console.log("Nutritionix API results:", result);
 
         res.status(200).json({
@@ -416,6 +419,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       ).map((groupOf6) => chunkArray(groupOf6, 2)),
     };
 
+    console.log("Raw predicted nutrition:", result.nutrition);
     console.log("Predicted ingredients and nutrition:", dataResult);
 
     res.status(200).json({
