@@ -9,6 +9,7 @@ export const STANDARD_NUTRIENTS_SET = new Set([
   "total carbs",
   "net carbs",
   "dietary fiber",
+  "fiber",
   "protein",
   "cholesterol",
   "sodium",
@@ -16,6 +17,7 @@ export const STANDARD_NUTRIENTS_SET = new Set([
   "calcium",
   "iron",
   "potassium",
+  "carbohydrates",
 ]);
 
 export function renameNutrition(arr: any[]) {
