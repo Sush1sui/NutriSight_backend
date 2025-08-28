@@ -5,6 +5,7 @@ import {
   chunkArray,
   formatNutriments,
   renameNutrition,
+  STANDARD_NUTRIENTS_SET,
 } from "../utils/foodCameraUtils";
 import { NUTRITIONIX_NUTRIENT_MAP } from "../utils/nutritionixMap";
 import {
@@ -274,6 +275,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                         unit: n.unitName,
                       };
                     })
+                ).filter((i) =>
+                  STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
                 )
               ),
               6
@@ -374,9 +377,11 @@ export async function getFoodDataHandler(req: Request, res: Response) {
               ? ingredients.join(",")
               : "N/A (Natural language query)",
           nutrition: chunkArray(
-            renameNutrition(convertToGrams(nutritionData)).filter(
-              (n) => n.amount >= 0.1
-            ),
+            renameNutrition(convertToGrams(nutritionData))
+              .filter((n) => n.amount >= 0.1)
+              .filter((i) =>
+                STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
+              ),
             6
           ).map((groupOf6) => chunkArray(groupOf6, 2)),
         };
@@ -407,9 +412,11 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         servingSize: "150g",
         ingredients: result.allergens.join(","),
         nutrition: chunkArray(
-          renameNutrition(convertToGrams(result.nutrition)).filter(
-            (n) => n.amount >= 0.1
-          ),
+          renameNutrition(convertToGrams(result.nutrition))
+            .filter((n) => n.amount >= 0.1)
+            .filter((i) =>
+              STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
+            ),
           6
         ).map((groupOf6) => chunkArray(groupOf6, 2)),
       },

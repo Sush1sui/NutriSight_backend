@@ -1,3 +1,22 @@
+export const STANDARD_NUTRIENTS_SET = new Set([
+  "calories",
+  "total fat",
+  "saturated fat",
+  "trans fat",
+  "monounsaturated fat",
+  "polyunsaturated fat",
+  "total carbs",
+  "net carbs",
+  "dietary fiber",
+  "protein",
+  "cholesterol",
+  "sodium",
+  "vitamin a",
+  "calcium",
+  "iron",
+  "potassium",
+]);
+
 export function renameNutrition(arr: any[]) {
   return arr.map((item: any) => {
     if (
