@@ -17,6 +17,7 @@ export interface IUserAccount extends Document {
   birthDate?: Date;
   height?: number; // in feet
   weight?: number; // in kg
+  weightGoal?: string; // e.g., "lose", "maintain", "gain"
   targetWeight?: number; // in kg
   bmi?: number; // Body Mass Index
   allergens?: string[]; // Array of allergens
