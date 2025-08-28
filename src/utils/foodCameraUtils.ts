@@ -1,5 +1,6 @@
 export const STANDARD_NUTRIENTS_SET = new Set([
   "calories",
+  "energy",
   "total fat",
   "saturated fat",
   "trans fat",
