@@ -195,7 +195,11 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
 
   await user.save();
   // login user
-  res.json({ message: "Onboarding completed successfully", success: true });
+  res.json({
+    message: "Onboarding completed successfully",
+    success: true,
+    email: user.email,
+  });
   return;
 };
 
