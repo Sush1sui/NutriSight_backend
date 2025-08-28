@@ -53,7 +53,7 @@ export async function predictAllergensAndNutrition(
   const prompt = `
 For the food "${foodName}", list:
 1. The most common ingredients (comma-separated).
-2. The estimated nutrition facts for a serving size of ${servingSize} or your own estimated 1 serving, including calories, protein, fat, carbohydrates, and fiber.
+2. The estimated nutrition facts for a serving size of ${servingSize} or your own estimated 1 serving, including calories, protein, fat, carbohydrates, and fiber, and other macros and micros.
 Format your response as:
 Ingredients: ingredient1, ingredient2, ingredient3, ...
 Nutrition:
