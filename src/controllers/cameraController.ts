@@ -276,7 +276,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                 ).filter((i) =>
                   STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
                 )
-              ).filter((n: any) => n.value >= 0.1),
+              ).filter((n: any) => n.amount >= 0.1),
               6
             ).map((groupOf6) => chunkArray(groupOf6, 2));
 
