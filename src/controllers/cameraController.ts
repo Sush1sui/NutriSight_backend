@@ -5,7 +5,6 @@ import {
   chunkArray,
   filterStandardNutrients,
   formatNutriments,
-  renameNutrition,
 } from "../utils/foodCameraUtils";
 import { NUTRITIONIX_NUTRIENT_MAP } from "../utils/nutritionixMap";
 import {
