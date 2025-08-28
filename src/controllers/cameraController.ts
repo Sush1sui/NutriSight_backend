@@ -264,6 +264,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       if (data.foods && data.foods.length > 0) {
         for (const f of data.foods) {
           if (f.dataType === "Survey (FNDDS)") {
+            console.log("Raw USDA nutrition:", f.foodNutrients);
             results.nutrition = chunkArray(
               filterStandardNutrients(
                 convertToGrams(
@@ -312,7 +313,6 @@ export async function getFoodDataHandler(req: Request, res: Response) {
 
       data = null;
 
-      console.log("Raw USDA nutrition:", results.nutrition);
       console.log("USDA API results:", results);
 
       if (results.nutrition && results.ingredients && results.servingSize) {
