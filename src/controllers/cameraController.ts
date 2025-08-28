@@ -311,6 +311,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       }
 
       data = null;
+      console.log("USDA API results:", results);
 
       if (results.nutrition && results.ingredients && results.servingSize) {
         res.status(200).json({
@@ -383,6 +384,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           ).map((groupOf6) => chunkArray(groupOf6, 2)),
         };
 
+        console.log("Nutritionix API results:", result);
+
         res.status(200).json({
           message: "Food Data received successfully",
           data: result,
@@ -401,7 +404,20 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       return;
     }
 
-    // console.log("Gemini API response:", result);
+    const dataResult = {
+      foodName,
+      servingSize: "150g",
+      ingredients: result.allergens.join(","),
+      nutrition: chunkArray(
+        filterStandardNutrients(convertToGrams(result.nutrition)).filter(
+          (n) => n.amount >= 0.1
+        ),
+        6
+      ).map((groupOf6) => chunkArray(groupOf6, 2)),
+    };
+
+    console.log("Predicted ingredients and nutrition:", dataResult);
+
     res.status(200).json({
       message: "Food Data received successfully",
       data: {
