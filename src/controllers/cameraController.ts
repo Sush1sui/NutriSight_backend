@@ -3,8 +3,8 @@ import { classifyImage } from "../utils/model_inference";
 import * as fs from "fs";
 import {
   chunkArray,
+  filterStandardNutrients,
   formatNutriments,
-  renameNutrition,
 } from "../utils/foodCameraUtils";
 import { NUTRITIONIX_NUTRIENT_MAP } from "../utils/nutritionixMap";
 import {
@@ -76,7 +76,7 @@ export async function barcodeHandler(req: Request, res: Response) {
     if (food) {
       const foodNutrients = chunkArray(
         convertToGrams(
-          renameNutrition(
+          filterStandardNutrients(
             food.foodNutrients
               .filter((n: any) => n.value >= 0.1)
               .map((n: any) => {
@@ -264,7 +264,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           if (f.dataType === "Survey (FNDDS)") {
             results.nutrition = chunkArray(
               convertToGrams(
-                renameNutrition(
+                filterStandardNutrients(
                   f.foodNutrients
                     .filter((n: any) => n.value >= 0.1)
                     .map((n: any) => {
@@ -374,7 +374,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
               ? ingredients.join(",")
               : "N/A (Natural language query)",
           nutrition: chunkArray(
-            renameNutrition(convertToGrams(nutritionData)).filter(
+            filterStandardNutrients(convertToGrams(nutritionData)).filter(
               (n) => n.amount >= 0.1
             ),
             6
@@ -407,7 +407,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         servingSize: "150g",
         ingredients: result.allergens.join(","),
         nutrition: chunkArray(
-          renameNutrition(convertToGrams(result.nutrition)).filter(
+          filterStandardNutrients(convertToGrams(result.nutrition)).filter(
             (n) => n.amount >= 0.1
           ),
           6

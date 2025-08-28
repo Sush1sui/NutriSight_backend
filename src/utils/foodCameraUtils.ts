@@ -1,3 +1,34 @@
+const STANDARD_NUTRIENTS = {
+  calories: "Calories",
+  "total fat": "Total Fat",
+  "saturated fat": "Saturated Fat",
+  "trans fat": "Trans Fat",
+  "monounsaturated fat": "Monounsaturated Fat",
+  "polyunsaturated fat": "Polyunsaturated Fat",
+  cholesterol: "Cholesterol",
+  sodium: "Sodium",
+  "total carbohydrates": "Total Carbohydrates",
+  "net carbs": "Net Carbs",
+  "dietary fiber": "Dietary Fiber",
+  sugars: "Sugars",
+  protein: "Protein",
+  "vitamin a": "Vitamin A",
+  calcium: "Calcium",
+  iron: "Iron",
+  potassium: "Potassium",
+};
+
+export function filterStandardNutrients(arr: any[]) {
+  return arr.filter((item: any) => {
+    const name = (item.name || "")
+      .toLowerCase()
+      .replace(/-/g, " ")
+      .replace(/\,.*$/, "")
+      .trim();
+    return (STANDARD_NUTRIENTS as Record<string, string>)[name] !== undefined;
+  });
+}
+
 export function renameNutrition(arr: any[]) {
   return arr.map((item: any) => {
     if (
