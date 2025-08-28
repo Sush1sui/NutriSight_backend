@@ -18,15 +18,73 @@ const STANDARD_NUTRIENTS = {
   potassium: "Potassium",
 };
 
+// Map all possible synonyms to the standard key
+const synonymMap: Record<string, string> = {
+  energy: "Calories",
+  "energy-kcal": "Calories",
+  "energy (kcal)": "Calories",
+  calories: "Calories",
+  fat: "Total Fat",
+  "total fat": "Total Fat",
+  "fatty acids, total saturated": "Saturated Fat",
+  "saturated fat": "Saturated Fat",
+  "fatty acids, total trans": "Trans Fat",
+  "trans fat": "Trans Fat",
+  "fatty acids, total monounsaturated": "Monounsaturated Fat",
+  "monounsaturated fat": "Monounsaturated Fat",
+  "fatty acids, total polyunsaturated": "Polyunsaturated Fat",
+  "polyunsaturated fat": "Polyunsaturated Fat",
+  cholesterol: "Cholesterol",
+  sodium: "Sodium",
+  salt: "Sodium",
+  "total carbohydrate": "Total Carbohydrates",
+  "total carbohydrates": "Total Carbohydrates",
+  "carbohydrate, by difference": "Total Carbohydrates",
+  carbohydrates: "Total Carbohydrates",
+  "net carbs": "Net Carbs",
+  "fiber, total dietary": "Dietary Fiber",
+  "dietary fiber": "Dietary Fiber",
+  fiber: "Dietary Fiber",
+  sugars: "Sugars",
+  sugar: "Sugars",
+  protein: "Protein",
+  proteins: "Protein",
+  "vitamin a": "Vitamin A",
+  "vitamin a, iu": "Vitamin A",
+  calcium: "Calcium",
+  "calcium, ca": "Calcium",
+  iron: "Iron",
+  "iron, fe": "Iron",
+  potassium: "Potassium",
+  "potassium, k": "Potassium",
+  // Add more as needed
+};
+
 export function filterStandardNutrients(arr: any[]) {
-  return arr.filter((item: any) => {
-    const name = (item.name || "")
-      .toLowerCase()
-      .replace(/-/g, " ")
-      .replace(/\,.*$/, "")
-      .trim();
-    return (STANDARD_NUTRIENTS as Record<string, string>)[name] !== undefined;
-  });
+  return arr
+    .map((item: any) => {
+      // Normalize the name
+      let name = (item.name || "")
+        .toLowerCase()
+        .replace(/-/g, " ")
+        .replace(/\,.*$/, "")
+        .trim();
+      // Map synonym to standard key
+      const standardKey = synonymMap[name];
+      if (
+        standardKey &&
+        STANDARD_NUTRIENTS[standardKey as keyof typeof STANDARD_NUTRIENTS]
+      ) {
+        return {
+          ...item,
+          name: STANDARD_NUTRIENTS[
+            standardKey as keyof typeof STANDARD_NUTRIENTS
+          ],
+        };
+      }
+      return null;
+    })
+    .filter((item) => item !== null);
 }
 
 export function renameNutrition(arr: any[]) {

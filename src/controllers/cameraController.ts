@@ -78,17 +78,15 @@ export async function barcodeHandler(req: Request, res: Response) {
       const foodNutrients = chunkArray(
         filterStandardNutrients(
           convertToGrams(
-            renameNutrition(
-              food.foodNutrients
-                .filter((n: any) => n.value >= 0.1)
-                .map((n: any) => {
-                  return {
-                    name: n.nutrientName,
-                    amount: n.value,
-                    unit: n.unitName,
-                  };
-                })
-            )
+            food.foodNutrients
+              .filter((n: any) => n.value >= 0.1)
+              .map((n: any) => {
+                return {
+                  name: n.nutrientName,
+                  amount: n.value,
+                  unit: n.unitName,
+                };
+              })
           )
         ),
         6
@@ -269,18 +267,16 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           if (f.dataType === "Survey (FNDDS)") {
             results.nutrition = chunkArray(
               filterStandardNutrients(
-                renameNutrition(
-                  convertToGrams(
-                    f.foodNutrients
-                      .filter((n: any) => n.value >= 0.1)
-                      .map((n: any) => {
-                        return {
-                          name: n.nutrientName,
-                          amount: n.value,
-                          unit: n.unitName,
-                        };
-                      })
-                  )
+                convertToGrams(
+                  f.foodNutrients
+                    .filter((n: any) => n.value >= 0.1)
+                    .map((n: any) => {
+                      return {
+                        name: n.nutrientName,
+                        amount: n.value,
+                        unit: n.unitName,
+                      };
+                    })
                 )
               ),
               6
@@ -381,10 +377,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
               ? ingredients.join(",")
               : "N/A (Natural language query)",
           nutrition: chunkArray(
-            filterStandardNutrients(
-              renameNutrition(convertToGrams(nutritionData)).filter(
-                (n) => n.amount >= 0.1
-              )
+            filterStandardNutrients(convertToGrams(nutritionData)).filter(
+              (n) => n.amount >= 0.1
             ),
             6
           ).map((groupOf6) => chunkArray(groupOf6, 2)),
@@ -416,10 +410,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         servingSize: "150g",
         ingredients: result.allergens.join(","),
         nutrition: chunkArray(
-          filterStandardNutrients(
-            renameNutrition(convertToGrams(result.nutrition)).filter(
-              (n) => n.amount >= 0.1
-            )
+          filterStandardNutrients(convertToGrams(result.nutrition)).filter(
+            (n) => n.amount >= 0.1
           ),
           6
         ).map((groupOf6) => chunkArray(groupOf6, 2)),
