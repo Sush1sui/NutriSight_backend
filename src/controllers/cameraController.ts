@@ -402,7 +402,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       return;
     }
 
-    // console.log("Gemini API response:", result);
+    console.log("Gemini API response:", result);
     res.status(200).json({
       message: "Food Data received successfully",
       data: {
