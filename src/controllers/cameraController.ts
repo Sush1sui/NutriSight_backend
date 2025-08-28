@@ -272,16 +272,14 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                 filterStandardNutrients(
                   renameNutrition(
                     convertToGrams(
-                      f.foodNutrients
-                        .filter((n: any) => n.value >= 0.1)
-                        .map((n: any) => {
-                          return {
-                            name: n.nutrientName,
-                            amount: n.value,
-                            unit: n.unitName,
-                          };
-                        })
-                    )
+                      f.foodNutrients.map((n: any) => {
+                        return {
+                          name: n.nutrientName,
+                          amount: n.value,
+                          unit: n.unitName,
+                        };
+                      })
+                    ).filter((n: any) => n.value >= 0.1)
                   )
                 )
               ),

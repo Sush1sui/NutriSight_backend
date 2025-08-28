@@ -32,6 +32,13 @@ export function filterStandardNutrients(arr: any[]) {
 export function renameNutrition(arr: any[]) {
   return arr.map((item: any) => {
     if (
+      (item.name as string).toLowerCase() === "energy" ||
+      (item.name as string).toLowerCase() === "energy-kcal" ||
+      (item.name as string).toLowerCase() === "energy (kcal)"
+    ) {
+      return { ...item, name: "Calories" };
+    }
+    if (
       (item.name as string).toLowerCase() === "fatty acids, total saturated"
     ) {
       return { ...item, name: "Saturated Fats" };
