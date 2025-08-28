@@ -77,9 +77,7 @@ export function filterStandardNutrients(arr: any[]) {
       ) {
         return {
           ...item,
-          name: STANDARD_NUTRIENTS[
-            standardKey as keyof typeof STANDARD_NUTRIENTS
-          ],
+          name: standardKey,
         };
       }
       return null;
