@@ -15,7 +15,8 @@ export interface IUserAccount extends Document {
   profilePublicId?: string; // Optional field for public profile ID
   gender?: string;
   birthDate?: Date;
-  height?: number; // in feet
+  heightFeet?: number; // in feet
+  heightInches?: number; // in inches
   weight?: number; // in kg
   weightGoal?: string; // e.g., "lose", "maintain", "gain"
   targetWeight?: number; // in kg
@@ -38,7 +39,8 @@ const UserAccountSchema = new Schema<IUserAccount>({
   profileLink: { type: String, sparse: true },
   profilePublicId: { type: String, sparse: true }, // Optional field for public profile ID
   birthDate: { type: Date, sparse: true },
-  height: { type: Number, sparse: true }, // in feet
+  heightFeet: { type: Number, sparse: true }, // in feet
+  heightInches: { type: Number, sparse: true }, // in inches
   weight: { type: Number, sparse: true }, // in kg
   targetWeight: { type: Number, sparse: true }, // in kg
   bmi: { type: Number, sparse: true }, // Body Mass Index
