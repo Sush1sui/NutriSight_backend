@@ -189,13 +189,16 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     return;
   }
 
+  const heightMeters = height * 0.3048;
+  const heightMetersPowerOf2 = heightMeters ** 2;
+
   user.name = name;
   user.allergens = allergens;
   user.gender = gender;
   user.birthDate = birthDate;
   user.height = height;
   user.weight = weight;
-  user.bmi = weight / (height * 0.3048) ** 2; // Calculate BMI
+  user.bmi = weight / heightMetersPowerOf2; // Calculate BMI
   user.weightGoal = weightGoal;
   user.targetWeight = targetWeight;
 
