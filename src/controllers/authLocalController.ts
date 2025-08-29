@@ -164,7 +164,8 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     !height ||
     !weight ||
     !weightGoal ||
-    !targetWeight ||
+    targetWeight === null ||
+    targetWeight === undefined ||
     !email
   ) {
     res.status(400).json({ message: "All fields are required" });
