@@ -189,7 +189,13 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     return;
   }
 
-  const heightMeters = height * 0.3048;
+  const [feetStr, inchStr] = String(height).split(".");
+  const feet = Number(feetStr);
+  const inches = Number(inchStr || "0");
+
+  const feet_x_12 = feet * 12;
+  const initHeight = feet_x_12 + inches;
+  const heightMeters = initHeight * 0.0254;
   const heightMetersPowerOf2 = heightMeters ** 2;
 
   user.name = name;
