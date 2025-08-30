@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { classifyImage } from "../utils/model_inference";
 import * as fs from "fs";
 import {
+  capitalizeFirstLetter,
   chunkArray,
   formatNutriments,
   renameNutrition,
@@ -78,17 +79,17 @@ export async function barcodeHandler(req: Request, res: Response) {
       const foodNutrients = chunkArray(
         convertToGrams(
           renameNutrition(
-            food.foodNutrients
-              .filter((n: any) => n.value >= 0.1)
-              .map((n: any) => {
-                return {
-                  name: n.nutrientName,
-                  amount: n.value,
-                  unit: n.unitName,
-                };
-              })
+            food.foodNutrients.map((n: any) => {
+              return {
+                name: capitalizeFirstLetter(n.nutrientName),
+                amount: n.value,
+                unit: n.unitName,
+              };
+            })
+          ).filter((i) =>
+            STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
           )
-        ),
+        ).filter((n: any) => n.amount >= 0.1),
         6
       ).map((groupOf6) => chunkArray(groupOf6, 2));
 
@@ -268,7 +269,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                 renameNutrition(
                   f.foodNutrients.map((n: any) => {
                     return {
-                      name: n.nutrientName,
+                      name: capitalizeFirstLetter(n.nutrientName),
                       amount: n.value,
                       unit: n.unitName,
                     };
@@ -376,7 +377,13 @@ export async function getFoodDataHandler(req: Request, res: Response) {
               : "N/A (Natural language query)",
           nutrition: chunkArray(
             renameNutrition(
-              convertToGrams(nutritionData).filter((n) => n.amount >= 0.1)
+              convertToGrams(nutritionData)
+                .filter((n) => n.amount >= 0.1)
+                .map((n) => ({
+                  name: capitalizeFirstLetter(n.name),
+                  amount: n.amount,
+                  unit: n.unit,
+                }))
             ).filter((i) =>
               STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
             ),
@@ -411,7 +418,13 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         ingredients: result.allergens.join(","),
         nutrition: chunkArray(
           renameNutrition(
-            convertToGrams(result.nutrition).filter((n) => n.amount >= 0.1)
+            convertToGrams(result.nutrition)
+              .filter((n) => n.amount >= 0.1)
+              .map((n) => ({
+                name: capitalizeFirstLetter(n.name),
+                amount: n.amount,
+                unit: n.unit,
+              }))
           ).filter((i) =>
             STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
           ),
