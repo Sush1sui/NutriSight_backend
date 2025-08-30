@@ -65,8 +65,7 @@ const UserAccountSchema = new Schema<IUserAccount>({
         date: { type: Date, required: true },
         nutritionalData: [
           {
-            type: Map,
-            of: Number,
+            type: Object,
             required: true,
           },
         ],
