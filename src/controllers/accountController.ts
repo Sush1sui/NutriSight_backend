@@ -1,9 +1,5 @@
 import { Request, Response } from "express";
-import UserAccount, {
-  DietHistory,
-  IUserAccount,
-  NutritionalData,
-} from "../models/UserAccount";
+import UserAccount, { DietHistory, IUserAccount } from "../models/UserAccount";
 import { v2 as cloudinary } from "cloudinary";
 
 const ALLOWED_FIELDS = [
