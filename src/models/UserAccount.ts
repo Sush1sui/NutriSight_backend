@@ -32,6 +32,8 @@ export interface IUserAccount extends Document {
   otp?: string;
   otpExpires?: Date;
   isVerified: boolean;
+  loginAttempts: number;
+  lockUntil: Date | null;
 }
 
 const UserAccountSchema = new Schema<IUserAccount>({
@@ -55,6 +57,8 @@ const UserAccountSchema = new Schema<IUserAccount>({
   otp: { type: String },
   otpExpires: { type: Date },
   isVerified: { type: Boolean, default: false },
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil: { type: Date, default: null },
 });
 
 export default mongoose.model<IUserAccount>("UserAccount", UserAccountSchema);

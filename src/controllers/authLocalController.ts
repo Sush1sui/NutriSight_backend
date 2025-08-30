@@ -4,6 +4,9 @@ import UserAccount from "../models/UserAccount";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_TIME = 15 * 60 * 1000; // 15 minutes
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -70,6 +73,15 @@ export const register = async (req: Request, res: Response) => {
       .json({ message: "Email, first name, last name, and password required" });
     return;
   }
+
+  // Enforce minimum password length
+  if (password.length < 8) {
+    res
+      .status(400)
+      .json({ message: "Password must be at least 8 characters long" });
+    return;
+  }
+
   const existing = await UserAccount.findOne({ email });
   if (existing && existing.isVerified) {
     res.status(409).json({ message: "Email already registered" });
@@ -251,15 +263,47 @@ export const login = async (req: Request, res: Response) => {
     res.status(401).json({ message: "Invalid credentials or not verified" });
     return;
   }
+
+  // Check if account is locked
+  if (user.lockUntil && user.lockUntil > new Date()) {
+    const minutes = Math.ceil(
+      (user.lockUntil.getTime() - new Date().getTime()) / 60000
+    );
+    res
+      .status(403)
+      .json({ message: `Account locked. Try again in ${minutes} minute(s).` });
+    return;
+  }
+
   if (!user.password) {
     res.status(401).json({ message: "No password set for this account" });
     return;
   }
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
-    res.status(401).json({ message: "Invalid credentials" });
+    // Increment login attempts
+    user.loginAttempts = (user.loginAttempts || 0) + 1;
+
+    // Lock account if max attempts reached
+    if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+      user.lockUntil = new Date(Date.now() + LOCK_TIME);
+      await user.save();
+      res.status(403).json({
+        message: `Account locked due to too many failed attempts. Try again in 15 minutes.`,
+      });
+      return;
+    }
+
+    await user.save();
+    res.status(401).json({
+      message: `Invalid credentials. Attempt ${user.loginAttempts} of ${MAX_LOGIN_ATTEMPTS}.`,
+    });
     return;
   }
+
+  // Reset login attempts on successful login
+  user.loginAttempts = 0;
+  user.lockUntil = null;
 
   const userObj = user.toObject ? user.toObject() : user;
   delete userObj.password; // Remove password from response
