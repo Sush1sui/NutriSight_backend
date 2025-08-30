@@ -133,17 +133,17 @@ export const updateDietHistory = async (req: Request, res: Response) => {
         );
       });
 
-      // increment those existing from dietHistory.nutritionalData
-      // like protein exists like protein: 4
-      // then payload have protein: 5
-      // increment the existing key from the payload so the result will be protein: 9
       if (existingDietHistory) {
-        const incoming = (dietHistoryPayload as DietHistory).nutritionalData[0]; // assuming payload is always an array with one object
         const existingArray = existingDietHistory.nutritionalData;
 
         if (existingArray.length > 0) {
-          // Increment the last entry in the array
-          const lastEntry = existingArray[existingArray.length - 1];
+          // Merge and increment all nutrients
+          const incoming = Object.assign(
+            {},
+            ...(dietHistoryPayload as DietHistory).nutritionalData
+          );
+          const lastEntry = Object.assign({}, ...existingArray);
+
           for (const key of Object.keys(incoming)) {
             if (lastEntry[key] !== undefined) {
               lastEntry[key] += incoming[key];
@@ -151,8 +151,13 @@ export const updateDietHistory = async (req: Request, res: Response) => {
               lastEntry[key] = incoming[key];
             }
           }
+          existingDietHistory.nutritionalData = [lastEntry];
         } else {
-          // If no entry exists, push the incoming one
+          // If no entry exists, push the merged incoming one
+          const incoming = Object.assign(
+            {},
+            ...(dietHistoryPayload as DietHistory).nutritionalData
+          );
           existingArray.push(incoming);
         }
       } else {
