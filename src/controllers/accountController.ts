@@ -125,7 +125,7 @@ export const updateDietHistory = async (req: Request, res: Response) => {
     // find diet history date
     if (user.dietHistory) {
       const existingDietHistory = user.dietHistory.find((entry) => {
-        const entryDate = (dietHistoryPayload as DietHistory).date;
+        const entryDate = new Date((dietHistoryPayload as DietHistory).date);
         return (
           entryDate.getFullYear() === entry.date.getFullYear() &&
           entryDate.getMonth() === entry.date.getMonth() &&
