@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
-import UserAccount, { DietHistory, IUserAccount } from "../models/UserAccount";
+import UserAccount, { IUserAccount } from "../models/UserAccount";
 import { v2 as cloudinary } from "cloudinary";
+import { flattenNutritionalData } from "../utils/flattenNutritionalData";
 
 const ALLOWED_FIELDS = [
   "gender",
@@ -122,10 +123,15 @@ export const updateDietHistory = async (req: Request, res: Response) => {
       return;
     }
 
+    // Flatten the incoming nutritionalData array
+    const flattenedNutritionalData = flattenNutritionalData(
+      dietHistoryPayload.nutritionalData
+    );
+
     // find diet history date
     if (user.dietHistory) {
       const existingDietHistory = user.dietHistory.find((entry) => {
-        const entryDate = new Date((dietHistoryPayload as DietHistory).date);
+        const entryDate = new Date(dietHistoryPayload.date);
         return (
           entryDate.getFullYear() === entry.date.getFullYear() &&
           entryDate.getMonth() === entry.date.getMonth() &&
@@ -137,36 +143,33 @@ export const updateDietHistory = async (req: Request, res: Response) => {
         const existingArray = existingDietHistory.nutritionalData;
 
         if (existingArray.length > 0) {
-          // Merge and increment all nutrients
-          const incoming = Object.assign(
-            {},
-            ...(dietHistoryPayload as DietHistory).nutritionalData
-          );
           const lastEntry = Object.assign({}, ...existingArray);
 
-          for (const key of Object.keys(incoming)) {
+          // Increment or add each nutrient
+          for (const key of Object.keys(flattenedNutritionalData)) {
             if (lastEntry[key] !== undefined) {
-              lastEntry[key] += incoming[key];
+              lastEntry[key] += flattenedNutritionalData[key];
             } else {
-              lastEntry[key] = incoming[key];
+              lastEntry[key] = flattenedNutritionalData[key];
             }
           }
           existingDietHistory.nutritionalData = [lastEntry];
         } else {
-          // If no entry exists, push the merged incoming one
-          const incoming = Object.assign(
-            {},
-            ...(dietHistoryPayload as DietHistory).nutritionalData
-          );
-          existingArray.push(incoming);
+          existingDietHistory.nutritionalData.push(flattenedNutritionalData);
         }
       } else {
-        // If no diet history for this date, add a new entry
-        user.dietHistory.push(dietHistoryPayload as DietHistory);
+        user.dietHistory.push({
+          date: dietHistoryPayload.date,
+          nutritionalData: [flattenedNutritionalData],
+        });
       }
     } else {
-      // If no diet history exists at all, create the array with the new entry
-      user.dietHistory = [dietHistoryPayload as DietHistory];
+      user.dietHistory = [
+        {
+          date: dietHistoryPayload.date,
+          nutritionalData: [flattenedNutritionalData],
+        },
+      ];
     }
 
     await user.save();
