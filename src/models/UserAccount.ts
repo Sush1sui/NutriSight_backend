@@ -1,10 +1,10 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-interface NutritionalData {
+export interface NutritionalData {
   [key: string]: number;
 }
 
-interface DietHistory {
+export interface DietHistory {
   date: Date;
   nutritionalData: NutritionalData[];
 }

@@ -3,6 +3,7 @@ import upload from "../middleware/cloudinary";
 import {
   changeProfilePicture,
   updateAccount,
+  updateDietHistory,
 } from "../controllers/accountController";
 
 const router = Router();
@@ -14,5 +15,6 @@ router.post(
 );
 
 router.put("/update", updateAccount);
+router.put("/update-diet-history", updateDietHistory);
 
 export default router;
