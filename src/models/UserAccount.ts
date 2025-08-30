@@ -59,6 +59,21 @@ const UserAccountSchema = new Schema<IUserAccount>({
   isVerified: { type: Boolean, default: false },
   loginAttempts: { type: Number, default: 0 },
   lockUntil: { type: Date, default: null },
+  dietHistory: {
+    type: [
+      {
+        date: { type: Date, required: true },
+        nutritionalData: [
+          {
+            type: Map,
+            of: Number,
+            required: true,
+          },
+        ],
+      },
+    ],
+    default: [],
+  },
 });
 
 export default mongoose.model<IUserAccount>("UserAccount", UserAccountSchema);
