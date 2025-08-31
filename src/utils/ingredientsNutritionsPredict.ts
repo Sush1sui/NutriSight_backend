@@ -48,7 +48,6 @@ Tasks:
 - Organize the nutrition data into three groups: Macronutrients, Micronutrients, and Other Nutrients.
 - When matching allergens, only use single, simple ingredient names (not full phrases or grouped ingredients).
 - Make sure that in triggered allergens, the ingredient name exists in ingredients array
-- For Nutritions, only include those who are greater than 0.01 in value
 Return your answer as valid JSON in this format:
 {
   "ingredients": [array of strings],
@@ -118,7 +117,6 @@ For the food "${foodName}", do the following:
 4. Organize the nutrition data into three groups: Macronutrients, Micronutrients, and Other Nutrients.
 5. When matching allergens, only use single, simple ingredient names (not full phrases or grouped ingredients).
 6. Make sure that in triggered allergens, the ingredient name exists in ingredients array
-7. For Nutritions, only include those who are greater than 0.01 in value
 Return your answer as valid JSON in this format:
 {
   "ingredients": [array of strings],
