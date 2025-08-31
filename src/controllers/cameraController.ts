@@ -153,8 +153,6 @@ export async function barcodeHandler(req: Request, res: Response) {
       return;
     }
 
-    console.log(offData);
-
     res.status(200).json({
       message: "Barcode data received successfully from Open Food Facts",
       data: {
@@ -163,7 +161,8 @@ export async function barcodeHandler(req: Request, res: Response) {
         ingredients: organizedResult.ingredients,
         triggeredAllergens: organizedResult.triggeredAllergens,
         nutritionData: organizedResult.groupedNutrition,
-        servingSize: offData.product.serving_size || "N/A",
+        servingSize:
+          offData.product.serving_size || offData.product.quantity || "N/A",
       },
     });
     return;
