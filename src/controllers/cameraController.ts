@@ -49,6 +49,7 @@ export async function barcodeHandler(req: Request, res: Response) {
       return;
     }
 
+    console.log("Fetching data from USDA API...");
     const response = await fetch(
       `https://api.nal.usda.gov/fdc/v1/foods/search?query=${barcodeData}`,
       {
@@ -94,6 +95,7 @@ export async function barcodeHandler(req: Request, res: Response) {
       }
     }
 
+    console.log("Fetching data from Open Food Facts API...");
     // fallback to Open Food Facts if USDA API fails
     const offResponse = await fetch(
       `https://world.openfoodfacts.net/api/v2/product/${barcodeData}.json`,
@@ -122,7 +124,7 @@ export async function barcodeHandler(req: Request, res: Response) {
       (req.user as any).allergens,
       formatNutriments(offData.product.nutriments),
       true,
-      (offData.product.ingredients_text as string)?.split(",") || []
+      (offData.product.ingredients as string)?.split(",") || []
     );
 
     if (!organizedResult) {
@@ -140,7 +142,7 @@ export async function barcodeHandler(req: Request, res: Response) {
         name: offData.product.product_name || "Unknown",
         brand: offData.product.brands || "Unknown",
         ingredients: cleanIngredients(
-          (offData.product.ingredients_text as string)?.split(",") ||
+          (offData.product.ingredients as string)?.split(",") ||
             organizedResult.ingredients
         ),
         triggeredAllergens: organizedResult.triggeredAllergens,
