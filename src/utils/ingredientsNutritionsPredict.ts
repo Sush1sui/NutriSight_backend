@@ -48,7 +48,7 @@ Tasks:
 - Organize the nutrition data into three groups: Macronutrients, Micronutrients, and Other Nutrients.
 - When matching allergens, only use single, simple ingredient names (not full phrases or grouped ingredients).
 - Make sure that in triggered allergens, the ingredient name exists in ingredients array
-- For Nutritions, do not include those who have less than 0.01 value
+- For Nutritions, only include those who are greater than 0.01 in value
 Return your answer as valid JSON in this format:
 {
   "ingredients": [array of strings],
@@ -68,7 +68,14 @@ Return your answer as valid JSON in this format:
     contents: prompt,
   });
 
-  let result = {
+  let result: {
+    ingredients: string[];
+    triggeredAllergens: Array<{ ingredient: string; allergen: string }>;
+    groupedNutrition: Array<{
+      title: string;
+      items: Array<{ name: string; value: number; unit: string }>;
+    }>;
+  } = {
     ingredients: [],
     triggeredAllergens: [],
     groupedNutrition: [],
@@ -77,6 +84,9 @@ Return your answer as valid JSON in this format:
     const match = response.text?.match(/\{[\s\S]*\}/);
     if (match) {
       result = JSON.parse(match[0]);
+      result.groupedNutrition = result.groupedNutrition.filter((group) =>
+        group.items.some((item) => item.value > 0.01)
+      );
     }
   } catch (e) {
     console.error("Failed to parse response:", e);
@@ -108,7 +118,7 @@ For the food "${foodName}", do the following:
 4. Organize the nutrition data into three groups: Macronutrients, Micronutrients, and Other Nutrients.
 5. When matching allergens, only use single, simple ingredient names (not full phrases or grouped ingredients).
 6. Make sure that in triggered allergens, the ingredient name exists in ingredients array
-7. For Nutritions, do not include those who have less than 0.01 value
+7. For Nutritions, only include those who are greater than 0.01 in value
 Return your answer as valid JSON in this format:
 {
   "ingredients": [array of strings],
@@ -128,7 +138,14 @@ Return your answer as valid JSON in this format:
     contents: prompt,
   });
 
-  let result = {
+  let result: {
+    ingredients: string[];
+    triggeredAllergens: Array<{ ingredient: string; allergen: string }>;
+    groupedNutrition: Array<{
+      title: string;
+      items: Array<{ name: string; value: number; unit: string }>;
+    }>;
+  } = {
     ingredients: [],
     triggeredAllergens: [],
     groupedNutrition: [],
@@ -137,6 +154,9 @@ Return your answer as valid JSON in this format:
     const match = response.text?.match(/\{[\s\S]*\}/);
     if (match) {
       result = JSON.parse(match[0]);
+      result.groupedNutrition = result.groupedNutrition.filter((group) =>
+        group.items.some((item) => item.value > 0.01)
+      );
     }
   } catch (e) {
     console.error("Failed to parse response:", e);
