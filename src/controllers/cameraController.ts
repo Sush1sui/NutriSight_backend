@@ -91,6 +91,7 @@ export async function barcodeHandler(req: Request, res: Response) {
             triggeredAllergens: organizedResult.triggeredAllergens,
             nutritionData: organizedResult.groupedNutrition,
             servingSize: `${food.servingSize}${food.servingSizeUnit}`,
+            source: "usda",
           },
         });
         return;
@@ -155,6 +156,7 @@ export async function barcodeHandler(req: Request, res: Response) {
         nutritionData: organizedResult.groupedNutrition,
         servingSize:
           offData.product.serving_size || offData.product.quantity || "N/A",
+        source: "open food facts",
       },
     });
     return;
@@ -279,8 +281,10 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         triggeredAllergens?: Array<{ ingredient: string; allergen: string }>;
         foodName?: string;
         servingSize?: string;
+        source?: string;
       } = {
         foodName,
+        source: "usda",
       };
 
       // get the first food with survey dataType
@@ -350,6 +354,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
             servingSize: "150g",
             triggeredAllergens: geminiRes.triggeredAllergens,
             nutritionData: geminiRes.groupedNutrition,
+            source: "nutritionix",
           };
 
           res.status(200).json({
@@ -382,6 +387,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         ingredients: geminiRes.ingredients,
         triggeredAllergens: geminiRes.triggeredAllergens,
         nutritionData: geminiRes.groupedNutrition,
+        source: "gemini",
       },
     });
     return;
