@@ -81,7 +81,10 @@ export async function barcodeHandler(req: Request, res: Response) {
           data: {
             name: food.description,
             brand: food.brandOwner,
-            ingredients: cleanIngredients(organizedResult.ingredients),
+            ingredients: cleanIngredients(
+              (food.ingredients as string)?.split(",") ||
+                organizedResult.ingredients
+            ),
             triggeredAllergens: organizedResult.triggeredAllergens,
             nutritionData: organizedResult.groupedNutrition,
             servingSize: `${food.servingSize}${food.servingSizeUnit}`,
@@ -119,9 +122,7 @@ export async function barcodeHandler(req: Request, res: Response) {
       (req.user as any).allergens,
       formatNutriments(offData.product.nutriments),
       true,
-      (offData.product.ingredients || [])
-        .map((i: any) => i.text)
-        .filter(Boolean)
+      (offData.product.ingredients_text as string)?.split(",") || []
     );
 
     if (!organizedResult) {
@@ -138,7 +139,10 @@ export async function barcodeHandler(req: Request, res: Response) {
       data: {
         name: offData.product.product_name || "Unknown",
         brand: offData.product.brands || "Unknown",
-        ingredients: cleanIngredients(organizedResult.ingredients),
+        ingredients: cleanIngredients(
+          (offData.product.ingredients_text as string)?.split(",") ||
+            organizedResult.ingredients
+        ),
         triggeredAllergens: organizedResult.triggeredAllergens,
         nutritionData: organizedResult.groupedNutrition,
         servingSize:
@@ -282,7 +286,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         );
 
         if (geminiRes) {
-          results.ingredients = geminiRes.ingredients;
+          results.ingredients =
+            (food.ingredients as string)?.split(",") || geminiRes.ingredients;
           results.triggeredAllergens = geminiRes.triggeredAllergens;
           results.nutritionData = geminiRes.groupedNutrition;
           results.servingSize = "150g";
