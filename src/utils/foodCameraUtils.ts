@@ -105,7 +105,7 @@ export function formatNutriments(nutriments: any) {
     if (nutriments[key] !== undefined && nutriments[key] > 0) {
       nutrientList.push({
         name: capitalizeFirstLetter(key.replace(/-/g, " ")), // Make the name more readable
-        amount: nutriments[key],
+        value: nutriments[key],
         // The unit is usually in a corresponding key like 'proteins_unit'
         unit: nutriments[`${key}_unit`] || "g", // Default to 'g' if no unit
       });

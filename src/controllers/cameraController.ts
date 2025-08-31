@@ -12,6 +12,7 @@ import { NUTRITIONIX_NUTRIENT_MAP } from "../utils/nutritionixMap";
 import {
   predictAllergensAndNutrition,
   scanAllergens,
+  scanAllergensAndOrganizeNutrition,
 } from "../utils/ingredientsNutritionsPredict";
 import { convertToGrams } from "../utils/convertToGrams";
 
@@ -76,34 +77,42 @@ export async function barcodeHandler(req: Request, res: Response) {
     const food = data?.foods ? data.foods[0] : null;
     data = null;
     if (food) {
-      const foodNutrients = chunkArray(
-        convertToGrams(
-          renameNutrition(
-            food.foodNutrients.map((n: any) => {
-              return {
-                name: capitalizeFirstLetter(n.nutrientName),
-                amount: n.value,
-                unit: n.unitName,
-              };
-            })
-          ).filter((i) =>
-            STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
-          )
-        ).filter((n: any) => n.amount >= 0.1),
-        6
-      ).map((groupOf6) => chunkArray(groupOf6, 2));
+      // const foodNutrients = chunkArray(
+      //   convertToGrams(
+      //     renameNutrition(
+      //       food.foodNutrients.map((n: any) => {
+      //         return {
+      //           name: capitalizeFirstLetter(n.nutrientName),
+      //           amount: n.value,
+      //           unit: n.unitName,
+      //         };
+      //       })
+      //     ).filter((i) =>
+      //       STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
+      //     )
+      //   ).filter((n: any) => n.amount >= 0.1),
+      //   6
+      // ).map((groupOf6) => chunkArray(groupOf6, 2));
 
-      res.status(200).json({
-        message: "Barcode data received successfully",
-        data: {
-          name: food.description,
-          brand: food.brandOwner,
-          ingredients: food.ingredients,
-          nutrition: foodNutrients, // T[][][]
-          servingSize: `${food.servingSize}${food.servingSizeUnit}`,
-        },
-      });
-      return;
+      const organizedResult = await scanAllergensAndOrganizeNutrition(
+        food.description,
+        (req.user as any).allergens,
+        food.foodNutrients
+      );
+      if (organizedResult && organizedResult.groupedNutrition) {
+        res.status(200).json({
+          message: "Barcode data received successfully",
+          data: {
+            name: food.description,
+            brand: food.brandOwner,
+            ingredients: organizedResult.ingredients,
+            triggeredAllergens: organizedResult.triggeredAllergens,
+            nutritionData: organizedResult.groupedNutrition,
+            servingSize: `${food.servingSize}${food.servingSizeUnit}`,
+          },
+        });
+        return;
+      }
     }
 
     // fallback to Open Food Facts if USDA API fails
@@ -129,18 +138,29 @@ export async function barcodeHandler(req: Request, res: Response) {
       return;
     }
 
+    const organizedResult = await scanAllergensAndOrganizeNutrition(
+      offData.product.product_name,
+      (req.user as any).allergens,
+      formatNutriments(offData.product.nutriments)
+    );
+
+    if (!organizedResult) {
+      console.log(
+        "Failed to organize nutrition data from open food facts:",
+        organizedResult
+      );
+      res.status(500).json({ error: "Failed to process nutrition data." });
+      return;
+    }
+
     res.status(200).json({
       message: "Barcode data received successfully from Open Food Facts",
       data: {
         name: offData.product.product_name || "Unknown",
         brand: offData.product.brands || "Unknown",
-        ingredients: offData.product.ingredients_text || "N/A",
-        nutrition: chunkArray(
-          convertToGrams(formatNutriments(offData.product.nutriments)).filter(
-            (n: any) => n.amount >= 0.1
-          ),
-          6
-        ).map((groupOf6) => chunkArray(groupOf6, 2)),
+        ingredients: organizedResult.ingredients,
+        triggeredAllergens: organizedResult.triggeredAllergens,
+        nutritionData: organizedResult.groupedNutrition,
         servingSize: offData.product.serving_size || "N/A",
       },
     });
@@ -256,6 +276,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         ingredients?: string;
         foodName?: string;
         servingSize?: string;
+        triggeredAllergens?: string[];
       } = {
         foodName,
       };
@@ -285,7 +306,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           }
         }
 
-        const ingredients = await scanAllergens(
+        const { ingredients, triggeredAllergens } = await scanAllergens(
           foodName,
           (req.user as any).allergens
         );
@@ -301,12 +322,17 @@ export async function getFoodDataHandler(req: Request, res: Response) {
               results.servingSize = f.packageWeight
                 ? f.packageWeight
                 : `${f.servingSize}${f.servingSizeUnit}`;
+              results.triggeredAllergens = (req.user as any).allergens.filter(
+                (a: string) =>
+                  f.ingredients.toLowerCase().includes(a.toLowerCase())
+              );
               break;
             }
           }
         } else {
           results.ingredients = ingredients.join(",");
           results.servingSize = "150g";
+          results.triggeredAllergens = triggeredAllergens;
         }
       }
 
@@ -358,7 +384,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           })
           .filter(Boolean);
 
-        const ingredients = await scanAllergens(
+        const { ingredients, triggeredAllergens } = await scanAllergens(
           foodName,
           (req.user as any).allergens
         );
@@ -375,6 +401,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
             ingredients.length > 0
               ? ingredients.join(",")
               : "N/A (Natural language query)",
+          triggeredAllergens,
           nutrition: chunkArray(
             renameNutrition(
               convertToGrams(nutritionData)
@@ -399,26 +426,29 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       }
     }
 
-    const result = await predictAllergensAndNutrition(
-      foodName,
-      (req.user as any).allergens
-    );
-    if (!result) {
+    const { triggeredAllergens, ingredients, nutrition } =
+      await predictAllergensAndNutrition(foodName, (req.user as any).allergens);
+    if (!triggeredAllergens || !ingredients || !nutrition) {
       console.error("Failed to fetch ingredients and nutrition data");
       res.status(404).json({ message: "No food data found" });
       return;
     }
 
-    console.log("Gemini API response:", result);
+    console.log("Gemini API response:", {
+      triggeredAllergens,
+      ingredients,
+      nutrition,
+    });
     res.status(200).json({
       message: "Food Data received successfully",
       data: {
         foodName,
         servingSize: "150g",
-        ingredients: result.allergens.join(","),
+        ingredients: ingredients.join(","),
+        triggeredAllergens,
         nutrition: chunkArray(
           renameNutrition(
-            convertToGrams(result.nutrition)
+            convertToGrams(nutrition)
               .filter((n) => n.amount >= 0.1)
               .map((n) => ({
                 name: capitalizeFirstLetter(n.name),

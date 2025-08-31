@@ -19,10 +19,72 @@ export async function predictIngredients(foodName: string): Promise<string[]> {
   return text.split(",").map((i: string) => i.trim());
 }
 
+export async function scanAllergensAndOrganizeNutrition(
+  foodName: string,
+  userAllergens: string[],
+  nutrition: Array<{ name: string; value: number; unit: string }>
+): Promise<{
+  ingredients: string[];
+  triggeredAllergens: string[];
+  groupedNutrition: Array<{
+    title: string;
+    items: Array<{ name: string; value: number; unit: string }>;
+  }>;
+} | null> {
+  const prompt = `
+For the food "${foodName}", do the following:
+1. List the most common ingredients (comma-separated).
+2. Identify which of these ingredients match the user's allergens: [${userAllergens.join(
+    ", "
+  )}].
+3. Organize the following nutrition data (array of {name, value, unit}): ${JSON.stringify(
+    nutrition
+  )}
+   into three groups: Macronutrients, Micronutrients, and Other Nutrients.
+Return your answer as valid JSON in this format:
+{
+  "ingredients": [array of strings],
+  "triggeredAllergens": [array of strings],
+  "groupedNutrition": [
+    { "title": "Macronutrients", "items": [...] },
+    { "title": "Micronutrients", "items": [...] },
+    { "title": "Other Nutrients", "items": [...] }
+  ]
+}
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-lite",
+    contents: prompt,
+  });
+
+  let result = {
+    ingredients: [],
+    triggeredAllergens: [],
+    groupedNutrition: [],
+  };
+  try {
+    // Try to extract the JSON from the response
+    const match = response.text?.match(/\{[\s\S]*\}/);
+    if (match) {
+      result = JSON.parse(match[0]);
+    }
+  } catch (e) {
+    // fallback: return empty arrays if parsing fails
+    console.error("Failed to parse response:", e);
+    return null;
+  }
+
+  return result;
+}
+
 export async function scanAllergens(
   foodName: string,
   userAllergens: string[]
-): Promise<string[]> {
+): Promise<{
+  ingredients: string[];
+  triggeredAllergens: string[];
+}> {
   const prompt = `List the most common ingredients in ${foodName}. Only list the ingredients, separated by commas.`;
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-lite",
@@ -32,14 +94,18 @@ export async function scanAllergens(
   const text = response.text ?? "";
   const ingredients = text
     .split(",")
-    .map((i: string) => i.trim().toLowerCase());
+    .map((i: string) => i.trim().toLowerCase())
+    .filter(Boolean);
 
   // Check which allergens are present in the ingredients
   const triggeredAllergens = userAllergens
     .map((a) => a.trim().toLowerCase())
     .filter((a) => ingredients.includes(a));
 
-  return triggeredAllergens;
+  return {
+    ingredients,
+    triggeredAllergens,
+  };
 }
 
 export async function predictAllergensAndNutrition(
@@ -47,7 +113,8 @@ export async function predictAllergensAndNutrition(
   userAllergens: string[],
   servingSize: string = "150g"
 ): Promise<{
-  allergens: string[];
+  triggeredAllergens: string[];
+  ingredients: string[];
   nutrition: Array<{ name: string; amount: number; unit: string }>;
 }> {
   const prompt = `
@@ -80,7 +147,7 @@ Fiber: X g
     : [];
 
   // Find triggered allergens
-  const allergens = userAllergens
+  const triggeredAllergens = userAllergens
     .map((a) => a.trim().toLowerCase())
     .filter((a) => ingredients.includes(a));
 
@@ -104,5 +171,5 @@ Fiber: X g
     });
   }
 
-  return { allergens, nutrition };
+  return { triggeredAllergens, nutrition, ingredients };
 }
