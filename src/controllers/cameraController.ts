@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { classifyImage } from "../utils/model_inference";
 import * as fs from "fs";
-import { cleanIngredients, formatNutriments } from "../utils/foodCameraUtils";
+import {
+  cleanIngredients,
+  extractAllIngredientTexts,
+  formatNutriments,
+} from "../utils/foodCameraUtils";
 import {
   geminiFallbackGroupedNutrition,
   scanAllergensAndOrganizeNutrition,
@@ -119,12 +123,17 @@ export async function barcodeHandler(req: Request, res: Response) {
       return;
     }
 
+    const ingredientNames = extractAllIngredientTexts(
+      offData.product.ingredients || []
+    );
+    const cleanedIngredients = cleanIngredients(ingredientNames);
+
     const organizedResult = await scanAllergensAndOrganizeNutrition(
       offData.product.product_name,
       (req.user as any).allergens,
       formatNutriments(offData.product.nutriments),
       true,
-      offData.product.ingredients || []
+      cleanedIngredients
     );
 
     if (!organizedResult) {
@@ -136,16 +145,12 @@ export async function barcodeHandler(req: Request, res: Response) {
       return;
     }
 
-    console.log("Open food facts ingredients:", offData.product.ingredients);
-
     res.status(200).json({
       message: "Barcode data received successfully from Open Food Facts",
       data: {
         name: offData.product.product_name || "Unknown",
         brand: offData.product.brands || "Unknown",
-        ingredients: cleanIngredients(
-          offData.product.ingredients || organizedResult.ingredients
-        ),
+        ingredients: organizedResult.ingredients,
         triggeredAllergens: organizedResult.triggeredAllergens,
         nutritionData: organizedResult.groupedNutrition,
         servingSize:

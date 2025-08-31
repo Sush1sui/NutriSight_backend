@@ -126,3 +126,19 @@ export function cleanIngredients(ingredients: string[]): string[] {
     )
     .filter((i) => i && i.length <= 40 && !seen.has(i) && seen.add(i)); // Remove duplicates and overly long names
 }
+
+export function extractAllIngredientTexts(ingredients: any[]): string[] {
+  const result: string[] = [];
+  function recurse(arr: any[]) {
+    for (const ing of arr) {
+      if (ing.text_en || ing.text) {
+        result.push((ing.text_en || ing.text).toUpperCase());
+      }
+      if (Array.isArray(ing.ingredients)) {
+        recurse(ing.ingredients);
+      }
+    }
+  }
+  recurse(ingredients);
+  return result;
+}
