@@ -113,3 +113,16 @@ export function formatNutriments(nutriments: any) {
   });
   return nutrientList;
 }
+
+export function cleanIngredients(ingredients: string[]): string[] {
+  const seen = new Set<string>();
+  return ingredients
+    .map((i) =>
+      i
+        .replace(/\s*\(.*?\)/g, "") // Remove anything in parentheses
+        .replace(/[^a-zA-Z0-9&\-\s]/g, "") // Remove most special chars except & and -
+        .trim()
+        .toLowerCase()
+    )
+    .filter((i) => i && i.length <= 40 && !seen.has(i) && seen.add(i)); // Remove duplicates and overly long names
+}

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { classifyImage } from "../utils/model_inference";
 import * as fs from "fs";
-import { formatNutriments } from "../utils/foodCameraUtils";
+import { cleanIngredients, formatNutriments } from "../utils/foodCameraUtils";
 import {
   geminiFallbackGroupedNutrition,
   scanAllergensAndOrganizeNutrition,
@@ -81,7 +81,7 @@ export async function barcodeHandler(req: Request, res: Response) {
           data: {
             name: food.description,
             brand: food.brandOwner,
-            ingredients: organizedResult.ingredients,
+            ingredients: cleanIngredients(organizedResult.ingredients),
             triggeredAllergens: organizedResult.triggeredAllergens,
             nutritionData: organizedResult.groupedNutrition,
             servingSize: `${food.servingSize}${food.servingSizeUnit}`,
@@ -138,7 +138,7 @@ export async function barcodeHandler(req: Request, res: Response) {
       data: {
         name: offData.product.product_name || "Unknown",
         brand: offData.product.brands || "Unknown",
-        ingredients: organizedResult.ingredients,
+        ingredients: cleanIngredients(organizedResult.ingredients),
         triggeredAllergens: organizedResult.triggeredAllergens,
         nutritionData: organizedResult.groupedNutrition,
         servingSize:
@@ -273,58 +273,6 @@ export async function getFoodDataHandler(req: Request, res: Response) {
 
       // get the first food with survey dataType
       if (food) {
-        // for (const f of data.foods) {
-        //   if (f.dataType === "Survey (FNDDS)") {
-        //     results.nutrition = chunkArray(
-        //       convertToGrams(
-        //         renameNutrition(
-        //           f.foodNutrients.map((n: any) => {
-        //             return {
-        //               name: capitalizeFirstLetter(n.nutrientName),
-        //               amount: n.value,
-        //               unit: n.unitName,
-        //             };
-        //           })
-        //         ).filter((i) =>
-        //           STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
-        //         )
-        //       ).filter((n: any) => n.amount >= 0.1),
-        //       6
-        //     ).map((groupOf6) => chunkArray(groupOf6, 2));
-
-        //     break;
-        //   }
-        // }
-
-        // const { ingredients, triggeredAllergens } = await scanAllergens(
-        //   foodName,
-        //   (req.user as any).allergens
-        // );
-        // console.log("Predicted ingredients:", ingredients);
-        // if (!ingredients || ingredients.length === 0) {
-        //   for (const f of data.foods) {
-        //     if (
-        //       f.dataType === "Branded" &&
-        //       (f.packageWeight || (f.servingSize && f.servingSizeUnit)) &&
-        //       f.ingredients
-        //     ) {
-        //       results.ingredients = f.ingredients;
-        //       results.servingSize = f.packageWeight
-        //         ? f.packageWeight
-        //         : `${f.servingSize}${f.servingSizeUnit}`;
-        //       results.triggeredAllergens = (req.user as any).allergens.filter(
-        //         (a: string) =>
-        //           f.ingredients.toLowerCase().includes(a.toLowerCase())
-        //       );
-        //       break;
-        //     }
-        //   }
-        // } else {
-        //   results.ingredients = ingredients.join(",");
-        //   results.servingSize = "150g";
-        //   results.triggeredAllergens = triggeredAllergens;
-        // }
-
         const geminiRes = await scanAllergensAndOrganizeNutrition(
           foodName,
           (req.user as any).allergens,
@@ -374,57 +322,6 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       const food = data.foods ? data.foods[0] : null;
       data = null;
       if (food) {
-        // const nutritionData = food.full_nutrients
-        //   .map((n: { attr_id: number; value: number }) => {
-        //     const nutrientInfo =
-        //       NUTRITIONIX_NUTRIENT_MAP[
-        //         n.attr_id as keyof typeof NUTRITIONIX_NUTRIENT_MAP
-        //       ];
-        //     if (nutrientInfo) {
-        //       return {
-        //         name: nutrientInfo.name,
-        //         amount: n.value,
-        //         unit: nutrientInfo.unit,
-        //       };
-        //     }
-        //     return null;
-        //   })
-        //   .filter(Boolean);
-
-        // const { ingredients, triggeredAllergens } = await scanAllergens(
-        //   foodName,
-        //   (req.user as any).allergens
-        // );
-        // console.log("Predicted ingredients:", ingredients);
-
-        // const result = {
-        //   foodName: food.food_name,
-        //   brand: "Generic", // Nutritionix common foods don't have a brand
-        //   servingSize:
-        //     ingredients.length > 0
-        //       ? "150g"
-        //       : `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
-        //   ingredients:
-        //     ingredients.length > 0
-        //       ? ingredients.join(",")
-        //       : "N/A (Natural language query)",
-        //   triggeredAllergens,
-        //   nutrition: chunkArray(
-        //     renameNutrition(
-        //       convertToGrams(nutritionData)
-        //         .filter((n) => n.amount >= 0.1)
-        //         .map((n) => ({
-        //           name: capitalizeFirstLetter(n.name),
-        //           amount: n.amount,
-        //           unit: n.unit,
-        //         }))
-        //     ).filter((i) =>
-        //       STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
-        //     ),
-        //     6
-        //   ).map((groupOf6) => chunkArray(groupOf6, 2)),
-        // };
-
         const geminiRes = await scanAllergensAndOrganizeNutrition(
           foodName,
           (req.user as any).allergens,
@@ -436,7 +333,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         if (geminiRes) {
           const result = {
             foodName: food.food_name,
-            ingredients: geminiRes.ingredients,
+            ingredients: cleanIngredients(geminiRes.ingredients),
             servingSize: "150g",
             triggeredAllergens: geminiRes.triggeredAllergens,
             nutritionData: geminiRes.groupedNutrition,
@@ -469,7 +366,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       data: {
         foodName,
         servingSize: "150g",
-        ingredients: geminiRes.ingredients,
+        ingredients: cleanIngredients(geminiRes.ingredients),
         triggeredAllergens: geminiRes.triggeredAllergens,
         nutritionData: geminiRes.groupedNutrition,
       },
