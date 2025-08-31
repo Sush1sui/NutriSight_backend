@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { classifyImage } from "../utils/model_inference";
 import * as fs from "fs";
 import {
-  cleanIngredients,
   extractAllIngredientTexts,
   formatNutriments,
 } from "../utils/foodCameraUtils";
@@ -86,10 +85,9 @@ export async function barcodeHandler(req: Request, res: Response) {
           data: {
             name: food.description,
             brand: food.brandOwner,
-            ingredients: cleanIngredients(
+            ingredients:
               (food.ingredients as string)?.split(",") ||
-                organizedResult.ingredients
-            ),
+              organizedResult.ingredients,
             triggeredAllergens: organizedResult.triggeredAllergens,
             nutritionData: organizedResult.groupedNutrition,
             servingSize: `${food.servingSize}${food.servingSizeUnit}`,
@@ -126,14 +124,13 @@ export async function barcodeHandler(req: Request, res: Response) {
     const ingredientNames = extractAllIngredientTexts(
       offData.product.ingredients || []
     );
-    const cleanedIngredients = cleanIngredients(ingredientNames);
 
     const organizedResult = await scanAllergensAndOrganizeNutrition(
       offData.product.product_name,
       (req.user as any).allergens,
       formatNutriments(offData.product.nutriments),
       true,
-      cleanedIngredients
+      ingredientNames
     );
 
     if (!organizedResult) {
@@ -150,7 +147,7 @@ export async function barcodeHandler(req: Request, res: Response) {
       data: {
         name: offData.product.product_name || "Unknown",
         brand: offData.product.brands || "Unknown",
-        ingredients: cleanedIngredients || organizedResult.ingredients,
+        ingredients: ingredientNames || organizedResult.ingredients,
         triggeredAllergens: organizedResult.triggeredAllergens,
         nutritionData: organizedResult.groupedNutrition,
         servingSize:
@@ -346,7 +343,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         if (geminiRes) {
           const result = {
             foodName: food.food_name,
-            ingredients: cleanIngredients(geminiRes.ingredients),
+            ingredients: geminiRes.ingredients,
             servingSize: "150g",
             triggeredAllergens: geminiRes.triggeredAllergens,
             nutritionData: geminiRes.groupedNutrition,
@@ -379,7 +376,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       data: {
         foodName,
         servingSize: "150g",
-        ingredients: cleanIngredients(geminiRes.ingredients),
+        ingredients: geminiRes.ingredients,
         triggeredAllergens: geminiRes.triggeredAllergens,
         nutritionData: geminiRes.groupedNutrition,
       },
