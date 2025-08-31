@@ -83,9 +83,12 @@ Return your answer as valid JSON in this format:
     const match = response.text?.match(/\{[\s\S]*\}/);
     if (match) {
       result = JSON.parse(match[0]);
-      result.groupedNutrition = result.groupedNutrition.filter((group) =>
-        group.items.some((item) => item.value > 0.01)
-      );
+      result.groupedNutrition = result.groupedNutrition
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => item.value > 0.01),
+        }))
+        .filter((group) => group.items.length > 0);
     }
   } catch (e) {
     console.error("Failed to parse response:", e);
@@ -152,9 +155,12 @@ Return your answer as valid JSON in this format:
     const match = response.text?.match(/\{[\s\S]*\}/);
     if (match) {
       result = JSON.parse(match[0]);
-      result.groupedNutrition = result.groupedNutrition.filter((group) =>
-        group.items.some((item) => item.value > 0.01)
-      );
+      result.groupedNutrition = result.groupedNutrition
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => item.value > 0.01),
+        }))
+        .filter((group) => group.items.length > 0);
     }
   } catch (e) {
     console.error("Failed to parse response:", e);
