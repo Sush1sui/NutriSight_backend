@@ -153,6 +153,8 @@ export async function barcodeHandler(req: Request, res: Response) {
       return;
     }
 
+    console.log(offData);
+
     res.status(200).json({
       message: "Barcode data received successfully from Open Food Facts",
       data: {
