@@ -16,7 +16,7 @@ export async function scanAllergensAndOrganizeNutrition(
   ingredients?: string[]
 ): Promise<{
   ingredients: string[];
-  triggeredAllergens: string[];
+  triggeredAllergens: Array<{ ingredient: string; allergen: string }>;
   groupedNutrition: Array<{
     title: string;
     items: Array<{ name: string; value: number; unit: string }>;
@@ -49,7 +49,9 @@ Tasks:
 Return your answer as valid JSON in this format:
 {
   "ingredients": [array of strings],
-  "triggeredAllergens": [array of strings],
+  "triggeredAllergens": [
+    { "ingredient": "ingredient name", "allergen": "allergen name" }
+  ],
   "groupedNutrition": [
     { "title": "Macronutrients", "items": [...] },
     { "title": "Micronutrients", "items": [...] },
@@ -87,7 +89,7 @@ export async function geminiFallbackGroupedNutrition(
   servingSize: string = "150g"
 ): Promise<{
   ingredients: string[];
-  triggeredAllergens: string[];
+  triggeredAllergens: Array<{ ingredient: string; allergen: string }>;
   groupedNutrition: Array<{
     title: string;
     items: Array<{ name: string; value: number; unit: string }>;
@@ -104,7 +106,9 @@ For the food "${foodName}", do the following:
 Return your answer as valid JSON in this format:
 {
   "ingredients": [array of strings],
-  "triggeredAllergens": [array of strings],
+  "triggeredAllergens": [
+    { "ingredient": "ingredient name", "allergen": "allergen name" }
+  ],
   "groupedNutrition": [
     { "title": "Macronutrients", "items": [...] },
     { "title": "Micronutrients", "items": [...] },

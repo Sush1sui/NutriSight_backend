@@ -264,7 +264,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           }[];
         }[];
         ingredients?: string[];
-        triggeredAllergens?: string[];
+        triggeredAllergens?: Array<{ ingredient: string; allergen: string }>;
         foodName?: string;
         servingSize?: string;
       } = {
