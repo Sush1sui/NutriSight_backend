@@ -47,6 +47,7 @@ Tasks:
 - Identify which of these ingredients match the user's allergens.
 - Organize the nutrition data into three groups: Macronutrients, Micronutrients, and Other Nutrients.
 - When matching allergens, only use single, simple ingredient names (not full phrases or grouped ingredients).
+- Make sure that in triggered allergens, the ingredient name exists in ingredients array
 Return your answer as valid JSON in this format:
 {
   "ingredients": [array of strings],
@@ -105,6 +106,7 @@ For the food "${foodName}", do the following:
 3. Estimate the nutrition facts for a serving size of ${servingSize}, including calories, protein, fat, carbohydrates, fiber, and other relevant macros and micros.
 4. Organize the nutrition data into three groups: Macronutrients, Micronutrients, and Other Nutrients.
 5. When matching allergens, only use single, simple ingredient names (not full phrases or grouped ingredients).
+6. Make sure that in triggered allergens, the ingredient name exists in ingredients array
 Return your answer as valid JSON in this format:
 {
   "ingredients": [array of strings],
