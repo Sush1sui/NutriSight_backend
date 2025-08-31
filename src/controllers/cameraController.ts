@@ -1,20 +1,11 @@
 import { Request, Response } from "express";
 import { classifyImage } from "../utils/model_inference";
 import * as fs from "fs";
+import { formatNutriments } from "../utils/foodCameraUtils";
 import {
-  capitalizeFirstLetter,
-  chunkArray,
-  formatNutriments,
-  renameNutrition,
-  STANDARD_NUTRIENTS_SET,
-} from "../utils/foodCameraUtils";
-import { NUTRITIONIX_NUTRIENT_MAP } from "../utils/nutritionixMap";
-import {
-  predictAllergensAndNutrition,
-  scanAllergens,
+  geminiFallbackGroupedNutrition,
   scanAllergensAndOrganizeNutrition,
 } from "../utils/ingredientsNutritionsPredict";
-import { convertToGrams } from "../utils/convertToGrams";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -77,27 +68,12 @@ export async function barcodeHandler(req: Request, res: Response) {
     const food = data?.foods ? data.foods[0] : null;
     data = null;
     if (food) {
-      // const foodNutrients = chunkArray(
-      //   convertToGrams(
-      //     renameNutrition(
-      //       food.foodNutrients.map((n: any) => {
-      //         return {
-      //           name: capitalizeFirstLetter(n.nutrientName),
-      //           amount: n.value,
-      //           unit: n.unitName,
-      //         };
-      //       })
-      //     ).filter((i) =>
-      //       STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
-      //     )
-      //   ).filter((n: any) => n.amount >= 0.1),
-      //   6
-      // ).map((groupOf6) => chunkArray(groupOf6, 2));
-
       const organizedResult = await scanAllergensAndOrganizeNutrition(
         food.description,
         (req.user as any).allergens,
-        food.foodNutrients
+        food.foodNutrients,
+        true,
+        (food.ingredients as string)?.split(",") || []
       );
       if (organizedResult && organizedResult.groupedNutrition) {
         res.status(200).json({
@@ -141,7 +117,11 @@ export async function barcodeHandler(req: Request, res: Response) {
     const organizedResult = await scanAllergensAndOrganizeNutrition(
       offData.product.product_name,
       (req.user as any).allergens,
-      formatNutriments(offData.product.nutriments)
+      formatNutriments(offData.product.nutriments),
+      true,
+      (offData.product.ingredients || [])
+        .map((i: any) => i.text)
+        .filter(Boolean)
     );
 
     if (!organizedResult) {
@@ -271,80 +251,106 @@ export async function getFoodDataHandler(req: Request, res: Response) {
 
     if (usda_response.ok) {
       let data = (await usda_response.json()) as any;
+      const food = data?.foods ? data.foods[0] : null;
+      data = null;
 
       const results: {
-        nutrition?: any[][][];
-        ingredients?: string;
+        nutritionData?: {
+          title: string;
+          items: {
+            name: string;
+            value: number;
+            unit: string;
+          }[];
+        }[];
+        ingredients?: string[];
+        triggeredAllergens?: string[];
         foodName?: string;
         servingSize?: string;
-        triggeredAllergens?: string[];
       } = {
         foodName,
       };
 
       // get the first food with survey dataType
-      if (data.foods && data.foods.length > 0) {
-        for (const f of data.foods) {
-          if (f.dataType === "Survey (FNDDS)") {
-            results.nutrition = chunkArray(
-              convertToGrams(
-                renameNutrition(
-                  f.foodNutrients.map((n: any) => {
-                    return {
-                      name: capitalizeFirstLetter(n.nutrientName),
-                      amount: n.value,
-                      unit: n.unitName,
-                    };
-                  })
-                ).filter((i) =>
-                  STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
-                )
-              ).filter((n: any) => n.amount >= 0.1),
-              6
-            ).map((groupOf6) => chunkArray(groupOf6, 2));
+      if (food) {
+        // for (const f of data.foods) {
+        //   if (f.dataType === "Survey (FNDDS)") {
+        //     results.nutrition = chunkArray(
+        //       convertToGrams(
+        //         renameNutrition(
+        //           f.foodNutrients.map((n: any) => {
+        //             return {
+        //               name: capitalizeFirstLetter(n.nutrientName),
+        //               amount: n.value,
+        //               unit: n.unitName,
+        //             };
+        //           })
+        //         ).filter((i) =>
+        //           STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
+        //         )
+        //       ).filter((n: any) => n.amount >= 0.1),
+        //       6
+        //     ).map((groupOf6) => chunkArray(groupOf6, 2));
 
-            break;
-          }
-        }
+        //     break;
+        //   }
+        // }
 
-        const { ingredients, triggeredAllergens } = await scanAllergens(
+        // const { ingredients, triggeredAllergens } = await scanAllergens(
+        //   foodName,
+        //   (req.user as any).allergens
+        // );
+        // console.log("Predicted ingredients:", ingredients);
+        // if (!ingredients || ingredients.length === 0) {
+        //   for (const f of data.foods) {
+        //     if (
+        //       f.dataType === "Branded" &&
+        //       (f.packageWeight || (f.servingSize && f.servingSizeUnit)) &&
+        //       f.ingredients
+        //     ) {
+        //       results.ingredients = f.ingredients;
+        //       results.servingSize = f.packageWeight
+        //         ? f.packageWeight
+        //         : `${f.servingSize}${f.servingSizeUnit}`;
+        //       results.triggeredAllergens = (req.user as any).allergens.filter(
+        //         (a: string) =>
+        //           f.ingredients.toLowerCase().includes(a.toLowerCase())
+        //       );
+        //       break;
+        //     }
+        //   }
+        // } else {
+        //   results.ingredients = ingredients.join(",");
+        //   results.servingSize = "150g";
+        //   results.triggeredAllergens = triggeredAllergens;
+        // }
+
+        const geminiRes = await scanAllergensAndOrganizeNutrition(
           foodName,
-          (req.user as any).allergens
+          (req.user as any).allergens,
+          food.foodNutrients,
+          false,
+          (food.ingredients as string)?.split(",") || []
         );
-        console.log("Predicted ingredients:", ingredients);
-        if (!ingredients || ingredients.length === 0) {
-          for (const f of data.foods) {
-            if (
-              f.dataType === "Branded" &&
-              (f.packageWeight || (f.servingSize && f.servingSizeUnit)) &&
-              f.ingredients
-            ) {
-              results.ingredients = f.ingredients;
-              results.servingSize = f.packageWeight
-                ? f.packageWeight
-                : `${f.servingSize}${f.servingSizeUnit}`;
-              results.triggeredAllergens = (req.user as any).allergens.filter(
-                (a: string) =>
-                  f.ingredients.toLowerCase().includes(a.toLowerCase())
-              );
-              break;
-            }
-          }
-        } else {
-          results.ingredients = ingredients.join(",");
+
+        if (geminiRes) {
+          results.ingredients = geminiRes.ingredients;
+          results.triggeredAllergens = geminiRes.triggeredAllergens;
+          results.nutritionData = geminiRes.groupedNutrition;
           results.servingSize = "150g";
-          results.triggeredAllergens = triggeredAllergens;
+
+          if (
+            results.nutritionData &&
+            results.ingredients &&
+            results.servingSize
+          ) {
+            res.status(200).json({
+              message: "Food Data received successfully",
+              data: results,
+            });
+            return;
+          }
         }
-      }
-
-      data = null;
-
-      if (results.nutrition && results.ingredients && results.servingSize) {
-        res.status(200).json({
-          message: "Food Data received successfully",
-          data: results,
-        });
-        return;
       }
     }
 
@@ -368,99 +374,104 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       const food = data.foods ? data.foods[0] : null;
       data = null;
       if (food) {
-        const nutritionData = food.full_nutrients
-          .map((n: { attr_id: number; value: number }) => {
-            const nutrientInfo =
-              NUTRITIONIX_NUTRIENT_MAP[
-                n.attr_id as keyof typeof NUTRITIONIX_NUTRIENT_MAP
-              ];
-            if (nutrientInfo) {
-              return {
-                name: nutrientInfo.name,
-                amount: n.value,
-                unit: nutrientInfo.unit,
-              };
-            }
-            return null;
-          })
-          .filter(Boolean);
+        // const nutritionData = food.full_nutrients
+        //   .map((n: { attr_id: number; value: number }) => {
+        //     const nutrientInfo =
+        //       NUTRITIONIX_NUTRIENT_MAP[
+        //         n.attr_id as keyof typeof NUTRITIONIX_NUTRIENT_MAP
+        //       ];
+        //     if (nutrientInfo) {
+        //       return {
+        //         name: nutrientInfo.name,
+        //         amount: n.value,
+        //         unit: nutrientInfo.unit,
+        //       };
+        //     }
+        //     return null;
+        //   })
+        //   .filter(Boolean);
 
-        const { ingredients, triggeredAllergens } = await scanAllergens(
+        // const { ingredients, triggeredAllergens } = await scanAllergens(
+        //   foodName,
+        //   (req.user as any).allergens
+        // );
+        // console.log("Predicted ingredients:", ingredients);
+
+        // const result = {
+        //   foodName: food.food_name,
+        //   brand: "Generic", // Nutritionix common foods don't have a brand
+        //   servingSize:
+        //     ingredients.length > 0
+        //       ? "150g"
+        //       : `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
+        //   ingredients:
+        //     ingredients.length > 0
+        //       ? ingredients.join(",")
+        //       : "N/A (Natural language query)",
+        //   triggeredAllergens,
+        //   nutrition: chunkArray(
+        //     renameNutrition(
+        //       convertToGrams(nutritionData)
+        //         .filter((n) => n.amount >= 0.1)
+        //         .map((n) => ({
+        //           name: capitalizeFirstLetter(n.name),
+        //           amount: n.amount,
+        //           unit: n.unit,
+        //         }))
+        //     ).filter((i) =>
+        //       STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
+        //     ),
+        //     6
+        //   ).map((groupOf6) => chunkArray(groupOf6, 2)),
+        // };
+
+        const geminiRes = await scanAllergensAndOrganizeNutrition(
           foodName,
-          (req.user as any).allergens
+          (req.user as any).allergens,
+          food.full_nutrients,
+          false,
+          []
         );
-        console.log("Predicted ingredients:", ingredients);
 
-        const result = {
-          foodName: food.food_name,
-          brand: "Generic", // Nutritionix common foods don't have a brand
-          servingSize:
-            ingredients.length > 0
-              ? "150g"
-              : `${food.serving_qty} ${food.serving_unit} (${food.serving_weight_grams}g)`,
-          ingredients:
-            ingredients.length > 0
-              ? ingredients.join(",")
-              : "N/A (Natural language query)",
-          triggeredAllergens,
-          nutrition: chunkArray(
-            renameNutrition(
-              convertToGrams(nutritionData)
-                .filter((n) => n.amount >= 0.1)
-                .map((n) => ({
-                  name: capitalizeFirstLetter(n.name),
-                  amount: n.amount,
-                  unit: n.unit,
-                }))
-            ).filter((i) =>
-              STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
-            ),
-            6
-          ).map((groupOf6) => chunkArray(groupOf6, 2)),
-        };
+        if (geminiRes) {
+          const result = {
+            foodName: food.food_name,
+            ingredients: geminiRes.ingredients,
+            servingSize: "150g",
+            triggeredAllergens: geminiRes.triggeredAllergens,
+            nutritionData: geminiRes.groupedNutrition,
+          };
 
-        res.status(200).json({
-          message: "Food Data received successfully",
-          data: result,
-        });
-        return;
+          res.status(200).json({
+            message: "Food Data received successfully",
+            data: result,
+          });
+          return;
+        }
       }
     }
 
-    const { triggeredAllergens, ingredients, nutrition } =
-      await predictAllergensAndNutrition(foodName, (req.user as any).allergens);
-    if (!triggeredAllergens || !ingredients || !nutrition) {
-      console.error("Failed to fetch ingredients and nutrition data");
-      res.status(404).json({ message: "No food data found" });
+    const geminiRes = await geminiFallbackGroupedNutrition(
+      foodName,
+      (req.user as any).allergens,
+      "150g"
+    );
+
+    console.log("Gemini API response:", geminiRes);
+
+    if (!geminiRes) {
+      res.status(500).json({ message: "Failed to process food data" });
       return;
     }
 
-    console.log("Gemini API response:", {
-      triggeredAllergens,
-      ingredients,
-      nutrition,
-    });
     res.status(200).json({
       message: "Food Data received successfully",
       data: {
         foodName,
         servingSize: "150g",
-        ingredients: ingredients.join(","),
-        triggeredAllergens,
-        nutrition: chunkArray(
-          renameNutrition(
-            convertToGrams(nutrition)
-              .filter((n) => n.amount >= 0.1)
-              .map((n) => ({
-                name: capitalizeFirstLetter(n.name),
-                amount: n.amount,
-                unit: n.unit,
-              }))
-          ).filter((i) =>
-            STANDARD_NUTRIENTS_SET.has((i.name as string).toLowerCase())
-          ),
-          6
-        ).map((groupOf6) => chunkArray(groupOf6, 2)),
+        ingredients: geminiRes.ingredients,
+        triggeredAllergens: geminiRes.triggeredAllergens,
+        nutritionData: geminiRes.groupedNutrition,
       },
     });
     return;
