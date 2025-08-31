@@ -150,7 +150,7 @@ export async function barcodeHandler(req: Request, res: Response) {
       data: {
         name: offData.product.product_name || "Unknown",
         brand: offData.product.brands || "Unknown",
-        ingredients: organizedResult.ingredients,
+        ingredients: cleanedIngredients || organizedResult.ingredients,
         triggeredAllergens: organizedResult.triggeredAllergens,
         nutritionData: organizedResult.groupedNutrition,
         servingSize:
