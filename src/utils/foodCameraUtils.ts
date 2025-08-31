@@ -130,7 +130,7 @@ export function cleanIngredients(ingredients: string[]): string[] {
 export function extractAllIngredientTexts(ingredients: any[]): string[] {
   const result: string[] = [];
   for (const i of ingredients) {
-    if (i.text) {
+    if (i.text && (i.id as string).toLowerCase().startsWith("en")) {
       result.push(i.text.toLowerCase());
     }
   }
