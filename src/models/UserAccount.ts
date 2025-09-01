@@ -7,6 +7,10 @@ export interface NutritionalData {
 export interface DietHistory {
   date: Date;
   nutritionalData: NutritionalData[];
+  breakfast: { name: string; calorie: number }[];
+  lunch: { name: string; calorie: number }[];
+  dinner: { name: string; calorie: number }[];
+  otherMealTime: { name: string; calorie: number }[];
 }
 
 export interface IUserAccount extends Document {
@@ -69,6 +73,13 @@ const UserAccountSchema = new Schema<IUserAccount>({
             required: true,
           },
         ],
+        breakfast: { type: [{ name: String, calorie: Number }], default: [] },
+        lunch: { type: [{ name: String, calorie: Number }], default: [] },
+        dinner: { type: [{ name: String, calorie: Number }], default: [] },
+        otherMealTime: {
+          type: [{ name: String, calorie: Number }],
+          default: [],
+        },
       },
     ],
     default: [],

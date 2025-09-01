@@ -161,6 +161,10 @@ export const updateDietHistory = async (req: Request, res: Response) => {
         user.dietHistory.push({
           date: dietHistoryPayload.date,
           nutritionalData: [flattenedNutritionalData],
+          breakfast: dietHistoryPayload.breakfast,
+          lunch: dietHistoryPayload.lunch,
+          dinner: dietHistoryPayload.dinner,
+          otherMealTime: dietHistoryPayload.otherMealTime,
         });
       }
     } else {
@@ -168,6 +172,10 @@ export const updateDietHistory = async (req: Request, res: Response) => {
         {
           date: dietHistoryPayload.date,
           nutritionalData: [flattenedNutritionalData],
+          breakfast: dietHistoryPayload.breakfast,
+          lunch: dietHistoryPayload.lunch,
+          dinner: dietHistoryPayload.dinner,
+          otherMealTime: dietHistoryPayload.otherMealTime,
         },
       ];
     }
