@@ -114,6 +114,11 @@ export const updateDietHistory = async (req: Request, res: Response) => {
       return;
     }
 
+    console.log("Breakfast payload:", dietHistoryPayload.breakfast);
+    console.log("Lunch payload:", dietHistoryPayload.lunch);
+    console.log("Dinner payload:", dietHistoryPayload.dinner);
+    console.log("Other meal time payload:", dietHistoryPayload.otherMealTime);
+
     const uid = (req.user as { _id: string })._id;
 
     const user = await UserAccount.findById(uid);
