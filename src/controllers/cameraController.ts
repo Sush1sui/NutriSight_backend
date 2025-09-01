@@ -258,6 +258,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
     const { foodName } = req.body;
 
     // attempt to find food on DB first
+    console.log("Attempting to find food in database");
     const food = await FoodModel.findOne({
       name: (foodName as string).replace(/_/g, " ").toLowerCase(),
     });
