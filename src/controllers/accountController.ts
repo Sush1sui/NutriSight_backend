@@ -157,25 +157,45 @@ export const updateDietHistory = async (req: Request, res: Response) => {
         } else {
           existingDietHistory.nutritionalData.push(flattenedNutritionalData);
         }
+
+        // Append new meals to existing arrays
+        existingDietHistory.breakfast = [
+          ...(existingDietHistory.breakfast || []),
+          ...(dietHistoryPayload.breakfast || []),
+        ];
+        existingDietHistory.lunch = [
+          ...(existingDietHistory.lunch || []),
+          ...(dietHistoryPayload.lunch || []),
+        ];
+        existingDietHistory.dinner = [
+          ...(existingDietHistory.dinner || []),
+          ...(dietHistoryPayload.dinner || []),
+        ];
+        existingDietHistory.otherMealTime = [
+          ...(existingDietHistory.otherMealTime || []),
+          ...(dietHistoryPayload.otherMealTime || []),
+        ];
       } else {
+        // New date: push new entry
         user.dietHistory.push({
           date: dietHistoryPayload.date,
           nutritionalData: [flattenedNutritionalData],
-          breakfast: dietHistoryPayload.breakfast,
-          lunch: dietHistoryPayload.lunch,
-          dinner: dietHistoryPayload.dinner,
-          otherMealTime: dietHistoryPayload.otherMealTime,
+          breakfast: dietHistoryPayload.breakfast || [],
+          lunch: dietHistoryPayload.lunch || [],
+          dinner: dietHistoryPayload.dinner || [],
+          otherMealTime: dietHistoryPayload.otherMealTime || [],
         });
       }
     } else {
+      // No diet history at all: create new array
       user.dietHistory = [
         {
           date: dietHistoryPayload.date,
           nutritionalData: [flattenedNutritionalData],
-          breakfast: dietHistoryPayload.breakfast,
-          lunch: dietHistoryPayload.lunch,
-          dinner: dietHistoryPayload.dinner,
-          otherMealTime: dietHistoryPayload.otherMealTime,
+          breakfast: dietHistoryPayload.breakfast || [],
+          lunch: dietHistoryPayload.lunch || [],
+          dinner: dietHistoryPayload.dinner || [],
+          otherMealTime: dietHistoryPayload.otherMealTime || [],
         },
       ];
     }
