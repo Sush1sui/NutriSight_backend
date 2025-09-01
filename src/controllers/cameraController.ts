@@ -9,6 +9,7 @@ import {
   geminiFallbackGroupedNutrition,
   scanAllergensAndOrganizeNutrition,
 } from "../utils/ingredientsNutritionsPredict";
+import FoodModel from "../models/Foods";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -255,6 +256,32 @@ export async function getFoodDataHandler(req: Request, res: Response) {
     }
 
     const { foodName } = req.body;
+
+    // attempt to find food on DB first
+    const food = await FoodModel.findOne({
+      name: (foodName as string).replace(/_/g, " ").toLowerCase(),
+    });
+    if (food) {
+      const geminiRes = await geminiFallbackGroupedNutrition(
+        foodName,
+        (req.user as any).allergens,
+        food.serving_size
+      );
+
+      if (geminiRes) {
+        res.status(200).json({
+          message: "Food data retrieved successfully",
+          data: {
+            foodName: food.name,
+            ingredients: geminiRes.ingredients,
+            triggeredAllergens: geminiRes.triggeredAllergens,
+            nutritionData: geminiRes.groupedNutrition,
+            servingSize: food.serving_size,
+          },
+        });
+        return;
+      }
+    }
 
     console.log("Attempting to fetch data from USDA API");
     const usda_response = await fetch(
