@@ -13,7 +13,8 @@ export async function scanAllergensAndOrganizeNutrition(
   userAllergens: string[],
   nutrition: Array<{ name: string; value: number; unit: string }>,
   packagedFood?: boolean,
-  ingredients?: string[]
+  ingredients?: string[],
+  serving_size?: string
 ): Promise<{
   ingredients: string[];
   triggeredAllergens: Array<{ ingredient: string; allergen: string }>;
@@ -23,7 +24,7 @@ export async function scanAllergensAndOrganizeNutrition(
   }>;
 } | null> {
   // Set serving size for non-packaged food
-  const servingSize = packagedFood ? undefined : "150g";
+  const servingSize = serving_size || packagedFood ? undefined : "150g";
 
   const ingredientsPart =
     ingredients && ingredients.length > 0

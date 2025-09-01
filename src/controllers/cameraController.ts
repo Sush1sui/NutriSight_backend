@@ -263,9 +263,12 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       name: (foodName as string).replace(/_/g, " ").toLowerCase(),
     });
     if (food) {
-      const geminiRes = await geminiFallbackGroupedNutrition(
+      const geminiRes = await scanAllergensAndOrganizeNutrition(
         foodName,
         (req.user as any).allergens,
+        food.nutrition,
+        false,
+        [],
         food.serving_size
       );
 
