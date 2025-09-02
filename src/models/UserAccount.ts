@@ -13,6 +13,23 @@ export interface DietHistory {
   otherMealTime: { name: string; calorie: number }[];
 }
 
+export interface LoggedWeight {
+  value: number;
+  label:
+    | "Jan"
+    | "Feb"
+    | "Mar"
+    | "Apr"
+    | "May"
+    | "Jun"
+    | "Jul"
+    | "Aug"
+    | "Sep"
+    | "Oct"
+    | "Nov"
+    | "Dec";
+}
+
 export interface IUserAccount extends Document {
   gmailId?: string;
   profileLink?: string;
@@ -38,6 +55,7 @@ export interface IUserAccount extends Document {
   isVerified: boolean;
   loginAttempts: number;
   lockUntil: Date | null;
+  loggedWeights: LoggedWeight[];
 }
 
 const UserAccountSchema = new Schema<IUserAccount>({
@@ -79,6 +97,32 @@ const UserAccountSchema = new Schema<IUserAccount>({
         otherMealTime: {
           type: [{ name: String, calorie: Number }],
           default: [],
+        },
+      },
+    ],
+    default: [],
+  },
+  loggedWeights: {
+    type: [
+      {
+        value: { type: Number, required: true },
+        label: {
+          type: String,
+          enum: [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ],
+          required: true,
         },
       },
     ],
