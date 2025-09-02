@@ -10,6 +10,7 @@ import {
   scanAllergensAndOrganizeNutrition,
 } from "../utils/ingredientsNutritionsPredict";
 import FoodModel from "../models/Foods";
+import { convertToGrams } from "../utils/convertToGrams";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -81,6 +82,28 @@ export async function barcodeHandler(req: Request, res: Response) {
         (food.ingredients as string)?.split(",") || []
       );
       if (organizedResult && organizedResult.groupedNutrition) {
+        const convertedGroupedNutrition = organizedResult.groupedNutrition.map(
+          (group) => ({
+            title: group.title,
+            items: group.items
+              .filter((n) =>
+                ["g", "mg", "µg", "kg", "oz", "lb", "st", "ml", "iu"].includes(
+                  n.unit?.toLowerCase().trim()
+                )
+              )
+              .map((n) => ({
+                name: n.name,
+                value: convertToGrams(
+                  n.value,
+                  n.unit,
+                  n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+                  n.name
+                ).value,
+                unit: "g",
+              })),
+          })
+        );
+
         res.status(200).json({
           message: "Barcode data received successfully",
           data: {
@@ -90,7 +113,7 @@ export async function barcodeHandler(req: Request, res: Response) {
               (food.ingredients as string)?.split(",") ||
               organizedResult.ingredients,
             triggeredAllergens: organizedResult.triggeredAllergens,
-            nutritionData: organizedResult.groupedNutrition,
+            nutritionData: convertedGroupedNutrition,
             servingSize: `${food.servingSize}${food.servingSizeUnit}`,
             source: "usda",
           },
@@ -144,6 +167,28 @@ export async function barcodeHandler(req: Request, res: Response) {
       return;
     }
 
+    const convertedGroupedNutrition = organizedResult.groupedNutrition.map(
+      (group) => ({
+        title: group.title,
+        items: group.items
+          .filter((n) =>
+            ["g", "mg", "µg", "kg", "oz", "lb", "st", "ml", "iu"].includes(
+              n.unit?.toLowerCase().trim()
+            )
+          )
+          .map((n) => ({
+            name: n.name,
+            value: convertToGrams(
+              n.value,
+              n.unit,
+              n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+              n.name
+            ).value,
+            unit: "g",
+          })),
+      })
+    );
+
     res.status(200).json({
       message: "Barcode data received successfully from Open Food Facts",
       data: {
@@ -154,7 +199,7 @@ export async function barcodeHandler(req: Request, res: Response) {
             ? ingredientNames
             : organizedResult.ingredients,
         triggeredAllergens: organizedResult.triggeredAllergens,
-        nutritionData: organizedResult.groupedNutrition,
+        nutritionData: convertedGroupedNutrition,
         servingSize:
           offData.product.serving_size || offData.product.quantity || "N/A",
         source: "open food facts",
@@ -273,13 +318,35 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       );
 
       if (geminiRes) {
+        const convertedGroupedNutrition = geminiRes.groupedNutrition.map(
+          (group) => ({
+            title: group.title,
+            items: group.items
+              .filter((n) =>
+                ["g", "mg", "µg", "kg", "oz", "lb", "st", "ml", "iu"].includes(
+                  n.unit?.toLowerCase().trim()
+                )
+              )
+              .map((n) => ({
+                name: n.name,
+                value: convertToGrams(
+                  n.value,
+                  n.unit,
+                  n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+                  n.name
+                ).value,
+                unit: "g",
+              })),
+          })
+        );
+
         res.status(200).json({
           message: "Food data retrieved successfully",
           data: {
             foodName: food.name,
             ingredients: geminiRes.ingredients,
             triggeredAllergens: geminiRes.triggeredAllergens,
-            nutritionData: geminiRes.groupedNutrition,
+            nutritionData: convertedGroupedNutrition,
             servingSize: food.serving_size,
           },
         });
@@ -329,10 +396,40 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         );
 
         if (geminiRes) {
+          const convertedGroupedNutrition = geminiRes.groupedNutrition.map(
+            (group) => ({
+              title: group.title,
+              items: group.items
+                .filter((n) =>
+                  [
+                    "g",
+                    "mg",
+                    "µg",
+                    "kg",
+                    "oz",
+                    "lb",
+                    "st",
+                    "ml",
+                    "iu",
+                  ].includes(n.unit?.toLowerCase().trim())
+                )
+                .map((n) => ({
+                  name: n.name,
+                  value: convertToGrams(
+                    n.value,
+                    n.unit,
+                    n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+                    n.name
+                  ).value,
+                  unit: "g",
+                })),
+            })
+          );
+
           results.ingredients =
             (food.ingredients as string)?.split(",") || geminiRes.ingredients;
           results.triggeredAllergens = geminiRes.triggeredAllergens;
-          results.nutritionData = geminiRes.groupedNutrition;
+          results.nutritionData = convertedGroupedNutrition;
           results.servingSize = "150g";
 
           if (
@@ -379,12 +476,41 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         );
 
         if (geminiRes) {
+          const convertedGroupedNutrition = geminiRes.groupedNutrition.map(
+            (group) => ({
+              title: group.title,
+              items: group.items
+                .filter((n) =>
+                  [
+                    "g",
+                    "mg",
+                    "µg",
+                    "kg",
+                    "oz",
+                    "lb",
+                    "st",
+                    "ml",
+                    "iu",
+                  ].includes(n.unit?.toLowerCase().trim())
+                )
+                .map((n) => ({
+                  name: n.name,
+                  value: convertToGrams(
+                    n.value,
+                    n.unit,
+                    n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+                    n.name
+                  ).value,
+                  unit: "g",
+                })),
+            })
+          );
           const result = {
             foodName: food.food_name,
             ingredients: geminiRes.ingredients,
             servingSize: "150g",
             triggeredAllergens: geminiRes.triggeredAllergens,
-            nutritionData: geminiRes.groupedNutrition,
+            nutritionData: convertedGroupedNutrition,
             source: "nutritionix",
           };
 
