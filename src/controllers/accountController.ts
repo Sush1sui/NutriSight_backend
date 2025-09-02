@@ -16,6 +16,7 @@ const ALLOWED_FIELDS = [
   "name",
   "firstName",
   "lastName",
+  "loggedWeights",
 ];
 
 export const changeProfilePicture = async (req: Request, res: Response) => {
@@ -82,6 +83,20 @@ export const updateAccount = async (req: Request, res: Response) => {
       if (field in req.body) {
         updates[field as keyof IUserAccount] = req.body[field];
       }
+    }
+
+    if (
+      updates.heightFeet &&
+      updates.heightInches &&
+      updates.weight &&
+      updates.loggedWeights &&
+      updates.loggedWeights.length > 0
+    ) {
+      const feet_x_12 = updates.heightFeet * 12;
+      const initHeight = feet_x_12 + updates.heightInches;
+      const heightMeters = initHeight * 0.0254;
+      const heightMetersPowerOf2 = heightMeters ** 2;
+      updates.bmi = updates.weight / heightMetersPowerOf2;
     }
 
     const uid = (req.user as { _id: string })._id;
