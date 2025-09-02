@@ -87,9 +87,29 @@ export async function barcodeHandler(req: Request, res: Response) {
             title: group.title,
             items: group.items
               .filter((n) =>
-                ["g", "mg", "µg", "kg", "oz", "lb", "st", "ml", "iu"].includes(
-                  n.unit?.toLowerCase().trim()
-                )
+                [
+                  "g",
+                  "mg",
+                  "µg",
+                  "kg",
+                  "oz",
+                  "lb",
+                  "st",
+                  "ml",
+                  "iu",
+                  "l",
+                  "dl",
+                  "cl",
+                  "tbsp",
+                  "tsp",
+                  "cup",
+                  "pint",
+                  "quart",
+                  "gal",
+                  "kcal",
+                  "cal",
+                  "cals",
+                ].includes(n.unit?.toLowerCase().trim())
               )
               .map((n) => ({
                 name: n.name,
@@ -172,9 +192,29 @@ export async function barcodeHandler(req: Request, res: Response) {
         title: group.title,
         items: group.items
           .filter((n) =>
-            ["g", "mg", "µg", "kg", "oz", "lb", "st", "ml", "iu"].includes(
-              n.unit?.toLowerCase().trim()
-            )
+            [
+              "g",
+              "mg",
+              "µg",
+              "kg",
+              "oz",
+              "lb",
+              "st",
+              "ml",
+              "iu",
+              "l",
+              "dl",
+              "cl",
+              "tbsp",
+              "tsp",
+              "cup",
+              "pint",
+              "quart",
+              "gal",
+              "kcal",
+              "cal",
+              "cals",
+            ].includes(n.unit?.toLowerCase().trim())
           )
           .map((n) => ({
             name: n.name,
@@ -323,9 +363,29 @@ export async function getFoodDataHandler(req: Request, res: Response) {
             title: group.title,
             items: group.items
               .filter((n) =>
-                ["g", "mg", "µg", "kg", "oz", "lb", "st", "ml", "iu"].includes(
-                  n.unit?.toLowerCase().trim()
-                )
+                [
+                  "g",
+                  "mg",
+                  "µg",
+                  "kg",
+                  "oz",
+                  "lb",
+                  "st",
+                  "ml",
+                  "iu",
+                  "l",
+                  "dl",
+                  "cl",
+                  "tbsp",
+                  "tsp",
+                  "cup",
+                  "pint",
+                  "quart",
+                  "gal",
+                  "kcal",
+                  "cal",
+                  "cals",
+                ].includes(n.unit?.toLowerCase().trim())
               )
               .map((n) => ({
                 name: n.name,
@@ -411,6 +471,18 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                     "st",
                     "ml",
                     "iu",
+                    "l",
+                    "dl",
+                    "cl",
+                    "tbsp",
+                    "tsp",
+                    "cup",
+                    "pint",
+                    "quart",
+                    "gal",
+                    "kcal",
+                    "cal",
+                    "cals",
                   ].includes(n.unit?.toLowerCase().trim())
                 )
                 .map((n) => ({
@@ -491,6 +563,18 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                     "st",
                     "ml",
                     "iu",
+                    "l",
+                    "dl",
+                    "cl",
+                    "tbsp",
+                    "tsp",
+                    "cup",
+                    "pint",
+                    "quart",
+                    "gal",
+                    "kcal",
+                    "cal",
+                    "cals",
                   ].includes(n.unit?.toLowerCase().trim())
                 )
                 .map((n) => ({
@@ -499,7 +583,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                     n.value,
                     n.unit,
                     n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
-                    n.name
+                    n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " ")
                   ).value,
                   unit: "g",
                 })),
