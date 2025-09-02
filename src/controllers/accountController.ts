@@ -74,6 +74,9 @@ export const updateAccount = async (req: Request, res: Response) => {
       return;
     }
 
+    // logs payload
+    console.log("Account update payload:", req.body);
+
     const updates: Partial<IUserAccount> = {};
     for (const field of ALLOWED_FIELDS) {
       if (field in req.body) {
