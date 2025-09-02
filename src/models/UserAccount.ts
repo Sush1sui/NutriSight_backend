@@ -125,6 +125,7 @@ const UserAccountSchema = new Schema<IUserAccount>({
           ],
           required: true,
         },
+        year: { type: Number, required: true }, // <--- this must be present!
       },
     ],
     default: [],
