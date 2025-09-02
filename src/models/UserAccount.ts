@@ -28,6 +28,7 @@ export interface LoggedWeight {
     | "Oct"
     | "Nov"
     | "Dec";
+  year: number;
 }
 
 export interface IUserAccount extends Document {
