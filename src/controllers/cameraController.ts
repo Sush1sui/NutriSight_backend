@@ -408,6 +408,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
             triggeredAllergens: geminiRes.triggeredAllergens,
             nutritionData: convertedGroupedNutrition,
             servingSize: food.serving_size,
+            source: "mynetdiary",
           },
         });
         return;
