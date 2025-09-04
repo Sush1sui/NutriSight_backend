@@ -5,7 +5,7 @@ export interface NutritionalData {
 }
 
 export interface DietHistory {
-  date: Date;
+  date: string; // Store date as string in "YYYY-MM-DD" format
   nutritionalData: NutritionalData[];
   breakfast: { name: string; calorie: number }[];
   lunch: { name: string; calorie: number }[];
@@ -85,7 +85,7 @@ const UserAccountSchema = new Schema<IUserAccount>({
   dietHistory: {
     type: [
       {
-        date: { type: Date, required: true },
+        date: { type: String, required: true },
         nutritionalData: [
           {
             type: Object,

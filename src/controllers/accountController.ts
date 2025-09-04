@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import UserAccount, { IUserAccount } from "../models/UserAccount";
 import { v2 as cloudinary } from "cloudinary";
 import { flattenNutritionalData } from "../utils/flattenNutritionalData";
+import { getDateString } from "../utils/getDateString";
 
 const ALLOWED_FIELDS = [
   "gender",
@@ -137,15 +138,13 @@ export const updateDietHistory = async (req: Request, res: Response) => {
       dietHistoryPayload.nutritionalData
     );
 
+    const incomingDateStr = getDateString(dietHistoryPayload.date);
+
     // find diet history date
     if (user.dietHistory) {
       const existingDietHistory = user.dietHistory.find((entry) => {
-        const entryDate = new Date(dietHistoryPayload.date);
-        return (
-          entryDate.getFullYear() === entry.date.getFullYear() &&
-          entryDate.getMonth() === entry.date.getMonth() &&
-          entryDate.getDate() === entry.date.getDate()
-        );
+        const entryDateStr = getDateString(entry.date);
+        return entryDateStr === incomingDateStr;
       });
 
       if (existingDietHistory) {
