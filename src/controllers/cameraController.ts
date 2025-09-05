@@ -270,7 +270,7 @@ export async function predictFoodHandler(req: Request, res: Response) {
 
     // send image to hugging face for inference api
     const hfRes = await fetch(
-      "https://api-inference.huggingface.co/models/nateraw/food",
+      "https://api-inference.huggingface.co/models/Sush1sui/nutrisight_v1",
       {
         method: "POST",
         headers: {
