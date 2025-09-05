@@ -9,6 +9,7 @@ import {
 } from "../utils/ingredientsNutritionsPredict";
 import FoodModel from "../models/Foods";
 import { convertToGrams } from "../utils/convertToGrams";
+import * as fs from "fs";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -27,6 +28,11 @@ if (!NUTRITIONIX_API_KEY) {
   console.error("NUTRITIONIX_API_KEY is not set in the environment variables.");
   process.exit(1);
 }
+
+const classNames = JSON.parse(
+  fs.readFileSync("src/cnn_models/class_names.json", "utf8")
+);
+const modelPath = "src/cnn_models/model.onnx";
 
 export async function barcodeHandler(req: Request, res: Response) {
   try {
@@ -238,6 +244,18 @@ export async function barcodeHandler(req: Request, res: Response) {
     res.status(500).json({ message: "Internal server error" });
   }
   return;
+}
+
+export async function predictFoodHandler(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+  } catch (error) {
+    console.log("Error processing food prediction:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
 }
 
 export async function getFoodDataHandler(req: Request, res: Response) {
