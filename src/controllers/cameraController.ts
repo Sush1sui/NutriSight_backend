@@ -293,6 +293,8 @@ export async function predictFoodHandler(req: Request, res: Response) {
 
     const predictions = (await hfRes.json()) as any[];
 
+    console.log("Predictions from Hugging Face:", predictions);
+
     // let imgBuffer: Buffer<ArrayBufferLike> | null = Buffer.from(
     //   image,
     //   "base64"
