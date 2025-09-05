@@ -4,6 +4,10 @@ const MODEL_DIR = "src/cnn_model";
 const MODEL_PATH = `${MODEL_DIR}/model.onnx`;
 const CLASS_NAMES_PATH = `${MODEL_DIR}/class_names.json`;
 
+if (!fs.existsSync(MODEL_DIR)) {
+  fs.mkdirSync(MODEL_DIR, { recursive: true });
+}
+
 export let classNames: any[] | null = null;
 export let modelPath: string | null = null;
 
