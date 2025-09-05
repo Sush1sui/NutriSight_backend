@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   extractAllIngredientTexts,
   formatNutriments,
+  getNutrientsFromNutritionix,
 } from "../utils/foodCameraUtils";
 import {
   geminiFallbackGroupedNutrition,
@@ -158,13 +159,14 @@ export async function barcodeHandler(req: Request, res: Response) {
     if (nxResponse.ok) {
       const data = (await nxResponse.json()) as any;
       const food = data?.foods ? data.foods[0] : null;
+      console.log("Nutritionix data:", data);
       if (food) {
         const organizedResult = await scanAllergensAndOrganizeNutrition(
           food.food_name,
           (req.user as any).allergens,
-          food.full_nutrients,
+          getNutrientsFromNutritionix(food.full_nutrients),
           true,
-          []
+          food.nf_ingredient_statement
         );
         if (organizedResult && organizedResult.groupedNutrition) {
           const convertedGroupedNutrition =
@@ -215,10 +217,7 @@ export async function barcodeHandler(req: Request, res: Response) {
               ingredients: organizedResult.ingredients,
               triggeredAllergens: organizedResult.triggeredAllergens,
               nutritionData: convertedGroupedNutrition,
-              servingSize:
-                food.serving_qty && food.serving_unit
-                  ? `${food.serving_qty} ${food.serving_unit}`
-                  : "N/A",
+              servingSize: food.serving_weight_grams + "g",
               source: "nutritionix",
             },
           });
