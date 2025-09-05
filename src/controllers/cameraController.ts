@@ -10,6 +10,7 @@ import {
 import FoodModel from "../models/Foods";
 import { convertToGrams } from "../utils/convertToGrams";
 import * as fs from "fs";
+import { classifyImage } from "../utils/model_inference";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -249,11 +250,55 @@ export async function barcodeHandler(req: Request, res: Response) {
 export async function predictFoodHandler(req: Request, res: Response) {
   try {
     if (!req.user) {
+      console.error("User not authenticated");
       res.status(401).json({ message: "User not authenticated" });
       return;
     }
+
+    const { image } = req.body;
+    if (!image) {
+      console.error("No image provided for food scan");
+      res.status(400).json({ message: "No image provided" });
+      return;
+    }
+
+    // crop image
+
+    let imgBuffer: Buffer<ArrayBufferLike> | null = Buffer.from(
+      image,
+      "base64"
+    );
+
+    const predictions = await classifyImage(
+      imgBuffer,
+      modelPath,
+      classNames,
+      5
+    );
+
+    imgBuffer = null;
+
+    if (!predictions || predictions.length === 0) {
+      console.error("No food items detected in the image");
+      res.status(404).json({ error: "No food items detected in the image" });
+      return;
+    }
+
+    if (predictions.length === 0) {
+      console.error("No food items predicted close to the image");
+      res
+        .status(404)
+        .json({ error: "No food items predicted close to the image" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Food scan data received successfully",
+      data: predictions,
+    });
+    return;
   } catch (error) {
-    console.log("Error processing food prediction:", error);
+    console.error("Error processing food scan:", error);
     res.status(500).json({ message: "Internal server error", error });
   }
 }
