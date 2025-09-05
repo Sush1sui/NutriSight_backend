@@ -142,6 +142,91 @@ export async function barcodeHandler(req: Request, res: Response) {
       }
     }
 
+    //fallback to nutritionix
+    console.log("Fetching data from Nutritionix API...");
+    const nxResponse = await fetch(
+      `https://trackapi.nutritionix.com/v2/search/item?upc=${barcodeData}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-id": NUTRITIONIX_APP_ID,
+          "x-app-key": NUTRITIONIX_API_KEY,
+        },
+      }
+    );
+    if (nxResponse.ok) {
+      const data = (await nxResponse.json()) as any;
+      const food = data?.foods ? data.foods[0] : null;
+      if (food) {
+        const organizedResult = await scanAllergensAndOrganizeNutrition(
+          food.food_name,
+          (req.user as any).allergens,
+          food.full_nutrients,
+          true,
+          []
+        );
+        if (organizedResult && organizedResult.groupedNutrition) {
+          const convertedGroupedNutrition =
+            organizedResult.groupedNutrition.map((group) => ({
+              title: group.title,
+              items: group.items
+                .filter((n) =>
+                  [
+                    "g",
+                    "mg",
+                    "µg",
+                    "kg",
+                    "oz",
+                    "lb",
+                    "st",
+                    "ml",
+                    "iu",
+                    "l",
+                    "dl",
+                    "cl",
+                    "tbsp",
+                    "tsp",
+                    "cup",
+                    "pint",
+                    "quart",
+                    "gal",
+                    "kcal",
+                    "cal",
+                    "cals",
+                  ].includes(n.unit?.toLowerCase().trim())
+                )
+                .map((n) => ({
+                  name: n.name,
+                  value: convertToGrams(
+                    n.value,
+                    n.unit,
+                    n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+                    n.name
+                  ).value,
+                  unit: "g",
+                })),
+            }));
+          res.status(200).json({
+            message: "Barcode data received successfully",
+            data: {
+              name: food.food_name,
+              brand: food.brand_name,
+              ingredients: organizedResult.ingredients,
+              triggeredAllergens: organizedResult.triggeredAllergens,
+              nutritionData: convertedGroupedNutrition,
+              servingSize:
+                food.serving_qty && food.serving_unit
+                  ? `${food.serving_qty} ${food.serving_unit}`
+                  : "N/A",
+              source: "nutritionix",
+            },
+          });
+          return;
+        }
+      }
+    }
+
     console.log("Fetching data from Open Food Facts API...");
     // fallback to Open Food Facts if USDA API fails
     const offResponse = await fetch(
