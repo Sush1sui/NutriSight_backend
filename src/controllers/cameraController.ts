@@ -10,7 +10,7 @@ import {
 import FoodModel from "../models/Foods";
 import { convertToGrams } from "../utils/convertToGrams";
 import { classifyImage } from "../utils/model_inference";
-import * as fs from "fs";
+import { classNames, modelPath } from "../utils/initializeMode";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -35,11 +35,6 @@ if (!HUGGINGFACE_API_KEY) {
   console.error("HUGGINGFACE_API_KEY is not set in the environment variables.");
   process.exit(1);
 }
-
-const classNames = JSON.parse(
-  fs.readFileSync("src/cnn_model/class_names.json", "utf8")
-);
-const modelPath = "src/cnn_model/model.onnx";
 
 export async function barcodeHandler(req: Request, res: Response) {
   try {
@@ -302,8 +297,8 @@ export async function predictFoodHandler(req: Request, res: Response) {
 
     const predictions = await classifyImage(
       imgBuffer,
-      modelPath,
-      classNames,
+      modelPath!,
+      classNames!,
       5
     );
 
