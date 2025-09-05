@@ -168,3 +168,51 @@ export function getNutrientsFromNutritionix(item: any) {
 
   return out;
 }
+
+export function extractValuesWithUnitsFromOFF(nutrients: Record<string, any>) {
+  const out: { name: string; value: number; unit: string }[] = [];
+
+  const formatName = (k: string) =>
+    capitalizeFirstLetter(k.replace(/[-_]/g, " ").trim());
+
+  for (const key of Object.keys(nutrients)) {
+    if (!key.toLowerCase().includes("value")) continue;
+    const raw = nutrients[key];
+    const num = Number(raw);
+    if (!Number.isFinite(num)) continue;
+
+    const base = key.replace(/_?value$/i, "");
+    const unitKey = `${base}_unit`;
+    let unit = "g";
+    if (unitKey in nutrients && nutrients[unitKey] != null) {
+      unit = String(nutrients[unitKey]);
+    } else if (base.startsWith("energy")) {
+      unit = "kcal";
+    }
+
+    out.push({ name: formatName(base), value: num, unit });
+  }
+
+  // Ensure energy-kcal_serving is present with its unit
+  if ("energy-kcal_serving" in nutrients) {
+    const val = Number(nutrients["energy-kcal_serving"]);
+    if (Number.isFinite(val)) {
+      const unit = String(nutrients["energy-kcal_unit"] ?? "kcal");
+      const name = formatName("energy-kcal_serving");
+      if (!out.some((x) => x.name === name)) {
+        out.push({ name, value: val, unit });
+      }
+    }
+  }
+
+  // Record energy-kcal_unit as an entry (value 0) so caller sees the unit
+  if ("energy-kcal_unit" in nutrients) {
+    const unit = String(nutrients["energy-kcal_unit"]);
+    const name = formatName("energy-kcal_unit");
+    if (!out.some((x) => x.name === name)) {
+      out.push({ name, value: 0, unit });
+    }
+  }
+
+  return out;
+}

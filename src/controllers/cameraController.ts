@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import {
   extractAllIngredientTexts,
-  formatNutriments,
+  extractValuesWithUnitsFromOFF,
   getNutrientsFromNutritionix,
 } from "../utils/foodCameraUtils";
 import {
@@ -254,12 +254,26 @@ export async function barcodeHandler(req: Request, res: Response) {
       offData.product.ingredients || []
     );
 
+    const formattedNutriments = offData.product.nutriments
+      ? extractValuesWithUnitsFromOFF(offData.product.nutriments)
+      : [];
+
     const organizedResult = await scanAllergensAndOrganizeNutrition(
       offData.product.product_name,
       (req.user as any).allergens,
-      formatNutriments(offData.product.nutriments),
+      formattedNutriments,
       true,
-      ingredientNames
+      ingredientNames,
+      (() => {
+        const energyNutrient = formattedNutriments.find(
+          (n) =>
+            n.name.toLowerCase().includes("energy") ||
+            n.name.toLowerCase().includes("calories")
+        );
+        return energyNutrient
+          ? `${energyNutrient.value}${energyNutrient.unit}`
+          : undefined;
+      })()
     );
 
     if (!organizedResult) {
