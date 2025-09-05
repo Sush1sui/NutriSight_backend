@@ -52,6 +52,10 @@ async function downloadIfNotExistsOrReplace(url: string, dest: string) {
     if (!Array.isArray(classNames) || classNames.length === 0) {
       throw new Error("Invalid class names file");
     }
+    console.log("Class names loaded:", classNames.length, "classes");
+
+    modelPath = MODEL_PATH;
+    console.log("Model path set:", modelPath);
   } catch (err) {
     console.error("Failed to download model files:", err);
     process.exit(1);
