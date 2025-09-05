@@ -9,8 +9,8 @@ import {
 } from "../utils/ingredientsNutritionsPredict";
 import FoodModel from "../models/Foods";
 import { convertToGrams } from "../utils/convertToGrams";
-// import { classifyImage } from "../utils/model_inference";
-// import * as fs from "fs";
+import { classifyImage } from "../utils/model_inference";
+import * as fs from "fs";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 if (!USDA_API_KEY) {
@@ -36,10 +36,10 @@ if (!HUGGINGFACE_API_KEY) {
   process.exit(1);
 }
 
-// const classNames = JSON.parse(
-//   fs.readFileSync("src/cnn_model/class_names.json", "utf8")
-// );
-// const modelPath = "src/cnn_model/model.onnx";
+const classNames = JSON.parse(
+  fs.readFileSync("src/cnn_model/class_names.json", "utf8")
+);
+const modelPath = "src/cnn_model/model.onnx";
 
 export async function barcodeHandler(req: Request, res: Response) {
   try {
@@ -269,45 +269,45 @@ export async function predictFoodHandler(req: Request, res: Response) {
     }
 
     // send image to hugging face for inference api
-    const hfRes = await fetch(
-      "https://api-inference.huggingface.co/models/Sush1sui/nutrisight_v1",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HUGGINGFACE_API_KEY}`,
-          "Content-Type": "application/octet-stream",
-        },
-        body: Buffer.from(image, "base64"),
-      }
+    // const hfRes = await fetch(
+    //   "https://api-inference.huggingface.co/models/Sush1sui/nutrisight_v1",
+    //   {
+    //     method: "POST",
+    //     headers: {
+    //       Authorization: `Bearer ${HUGGINGFACE_API_KEY}`,
+    //       "Content-Type": "application/octet-stream",
+    //     },
+    //     body: Buffer.from(image, "base64"),
+    //   }
+    // );
+
+    // if (!hfRes.ok) {
+    //   const errBody = await hfRes.text();
+    //   console.error("Hugging Face API error:", errBody);
+    //   res.status(500).json({
+    //     error: "Failed to fetch data from Hugging Face",
+    //     message: errBody,
+    //   });
+    //   return;
+    // }
+
+    // const predictions = (await hfRes.json()) as any[];
+
+    // console.log("Predictions from Hugging Face:", predictions);
+
+    let imgBuffer: Buffer<ArrayBufferLike> | null = Buffer.from(
+      image,
+      "base64"
     );
 
-    if (!hfRes.ok) {
-      const errBody = await hfRes.text();
-      console.error("Hugging Face API error:", errBody);
-      res.status(500).json({
-        error: "Failed to fetch data from Hugging Face",
-        message: errBody,
-      });
-      return;
-    }
+    const predictions = await classifyImage(
+      imgBuffer,
+      modelPath,
+      classNames,
+      5
+    );
 
-    const predictions = (await hfRes.json()) as any[];
-
-    console.log("Predictions from Hugging Face:", predictions);
-
-    // let imgBuffer: Buffer<ArrayBufferLike> | null = Buffer.from(
-    //   image,
-    //   "base64"
-    // );
-
-    // const predictions = await classifyImage(
-    //   imgBuffer,
-    //   modelPath,
-    //   classNames,
-    //   5
-    // );
-
-    // imgBuffer = null;
+    imgBuffer = null;
 
     if (!predictions || predictions.length === 0) {
       console.error("No food items detected in the image");
