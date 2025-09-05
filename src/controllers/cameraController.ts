@@ -31,9 +31,9 @@ if (!NUTRITIONIX_API_KEY) {
 }
 
 const classNames = JSON.parse(
-  fs.readFileSync("src/cnn_models/class_names.json", "utf8")
+  fs.readFileSync("src/cnn_model/class_names.json", "utf8")
 );
-const modelPath = "src/cnn_models/model.onnx";
+const modelPath = "src/cnn_model/model.onnx";
 
 export async function barcodeHandler(req: Request, res: Response) {
   try {
