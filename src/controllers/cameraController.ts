@@ -277,7 +277,7 @@ export async function predictFoodHandler(req: Request, res: Response) {
           Authorization: `Bearer ${HUGGINGFACE_API_KEY}`,
           "Content-Type": "application/octet-stream",
         },
-        body: image,
+        body: Buffer.from(image, "base64"),
       }
     );
 
