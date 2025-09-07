@@ -31,6 +31,13 @@ export interface LoggedWeight {
   year: number;
 }
 
+export type DailyRecommendationType = {
+  calories: number;
+  carbs: number;
+  protein: number;
+  fat: number;
+};
+
 export interface IUserAccount extends Document {
   gmailId?: string;
   profileLink?: string;
@@ -58,6 +65,7 @@ export interface IUserAccount extends Document {
   lockUntil: Date | null;
   loggedWeights: LoggedWeight[];
   dietType?: string;
+  dailyRecommendation?: DailyRecommendationType;
 }
 
 const UserAccountSchema = new Schema<IUserAccount>({
@@ -132,6 +140,15 @@ const UserAccountSchema = new Schema<IUserAccount>({
     default: [],
   },
   dietType: { type: String, sparse: true },
+  dailyRecommendation: {
+    type: {
+      calories: { type: Number, default: 0 },
+      carbs: { type: Number, default: 0 },
+      protein: { type: Number, default: 0 },
+      fat: { type: Number, default: 0 },
+    },
+    default: { calories: 0, carbs: 0, protein: 0, fat: 0 },
+  },
 });
 
 export default mongoose.model<IUserAccount>("UserAccount", UserAccountSchema);
