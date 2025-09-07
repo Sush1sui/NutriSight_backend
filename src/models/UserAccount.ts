@@ -57,6 +57,7 @@ export interface IUserAccount extends Document {
   loginAttempts: number;
   lockUntil: Date | null;
   loggedWeights: LoggedWeight[];
+  dietType?: string;
 }
 
 const UserAccountSchema = new Schema<IUserAccount>({
@@ -130,6 +131,7 @@ const UserAccountSchema = new Schema<IUserAccount>({
     ],
     default: [],
   },
+  dietType: { type: String, sparse: true },
 });
 
 export default mongoose.model<IUserAccount>("UserAccount", UserAccountSchema);
