@@ -66,6 +66,7 @@ export interface IUserAccount extends Document {
   loggedWeights: LoggedWeight[];
   dietType?: string;
   dailyRecommendation?: DailyRecommendationType;
+  activityLevel?: string;
 }
 
 const UserAccountSchema = new Schema<IUserAccount>({
@@ -149,6 +150,7 @@ const UserAccountSchema = new Schema<IUserAccount>({
     },
     default: { calories: 0, carbs: 0, protein: 0, fat: 0 },
   },
+  activityLevel: { type: String, sparse: true },
 });
 
 export default mongoose.model<IUserAccount>("UserAccount", UserAccountSchema);

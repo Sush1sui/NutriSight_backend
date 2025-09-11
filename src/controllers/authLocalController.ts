@@ -167,6 +167,7 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     email,
     weightGoal,
     targetWeight,
+    activityLevel,
   } = req.body;
 
   if (
@@ -180,7 +181,8 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     !weightGoal ||
     targetWeight === null ||
     targetWeight === undefined ||
-    !email
+    !email ||
+    !activityLevel
   ) {
     res.status(400).json({ message: "All fields are required" });
     return;
@@ -218,6 +220,7 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
   user.bmi = weight / heightMetersPowerOf2; // Calculate BMI
   user.weightGoal = weightGoal;
   user.targetWeight = targetWeight;
+  user.activityLevel = activityLevel;
 
   await user.save();
   // login user
