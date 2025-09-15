@@ -173,6 +173,7 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     weightGoal,
     targetWeight,
     activityLevel,
+    loggedWeightPayload,
   } = req.body;
 
   if (
@@ -187,7 +188,8 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     targetWeight === null ||
     targetWeight === undefined ||
     !email ||
-    !activityLevel
+    !activityLevel ||
+    !loggedWeightPayload
   ) {
     res.status(400).json({ message: "All fields are required" });
     return;
@@ -256,6 +258,7 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     carbs: Math.round(targetCarbs),
     fat: Math.round(targetFat),
   };
+  user.loggedWeights = loggedWeightPayload;
 
   await user.save();
   // login user

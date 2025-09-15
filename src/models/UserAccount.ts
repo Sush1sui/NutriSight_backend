@@ -15,20 +15,7 @@ export interface DietHistory {
 
 export interface LoggedWeight {
   value: number;
-  label:
-    | "Jan"
-    | "Feb"
-    | "Mar"
-    | "Apr"
-    | "May"
-    | "Jun"
-    | "Jul"
-    | "Aug"
-    | "Sep"
-    | "Oct"
-    | "Nov"
-    | "Dec";
-  year: number;
+  date: string; // Optional date field in "YYYY-MM-DD" format
 }
 
 export type DailyRecommendationType = {
@@ -117,25 +104,7 @@ const UserAccountSchema = new Schema<IUserAccount>({
     type: [
       {
         value: { type: Number, required: true },
-        label: {
-          type: String,
-          enum: [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ],
-          required: true,
-        },
-        year: { type: Number, required: true }, // <--- this must be present!
+        date: { type: String, required: true }, // Store date as string in "YYYY-MM-DD" format
       },
     ],
     default: [],
