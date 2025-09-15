@@ -224,9 +224,9 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
   }
 
   if (weightGoal === "lose") {
-    targetCalories -= 500; // Reduce by 500 for weight loss
+    targetCalories -= 300; // Reduce by 300 for weight loss
   } else if (weightGoal === "gain") {
-    targetCalories += 500; // Increase by 500 for weight gain
+    targetCalories += 300; // Increase by 300 for weight gain
   }
 
   const calories15Percent = 0.15 * targetCalories;
