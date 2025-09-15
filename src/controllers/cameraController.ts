@@ -263,8 +263,6 @@ export async function barcodeHandler(req: Request, res: Response) {
       ? extractValuesWithUnitsFromOFF(offData.product.nutriments)
       : [];
 
-    console.log(formattedNutriments);
-
     const organizedResult = await scanAllergensAndOrganizeNutrition(
       offData.product.product_name,
       (req.user as any).allergens,
