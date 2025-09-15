@@ -263,6 +263,12 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     message: "Onboarding completed successfully",
     success: true,
     email: user.email,
+    dailyRecommendation: {
+      calories: Math.round(targetCalories),
+      protein: Math.round(targetProtein),
+      carbs: Math.round(targetCarbs),
+      fat: Math.round(targetFat),
+    },
   });
   return;
 };
