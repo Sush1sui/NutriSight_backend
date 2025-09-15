@@ -238,6 +238,9 @@ export async function barcodeHandler(req: Request, res: Response) {
         console.log("No Nutritionix data found, trying Open Food Facts...");
       }
     }
+    console.log(
+      "Failed to fetch data from Nutritionix API, trying Open Food Facts..."
+    );
 
     console.log("Fetching data from Open Food Facts API...");
     // fallback to Open Food Facts if USDA API fails
