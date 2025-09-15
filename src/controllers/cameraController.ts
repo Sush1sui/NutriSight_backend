@@ -151,7 +151,6 @@ export async function barcodeHandler(req: Request, res: Response) {
     const nxResponse = await fetch(
       `https://trackapi.nutritionix.com/v2/search/item?upc=${barcodeData}`,
       {
-        method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-app-id": NUTRITIONIX_APP_ID,
@@ -228,6 +227,8 @@ export async function barcodeHandler(req: Request, res: Response) {
         } else {
           console.log("No Nutritionix data found, trying Open Food Facts...");
         }
+      } else {
+        console.log("No Nutritionix data found, trying Open Food Facts...");
       }
     }
 
