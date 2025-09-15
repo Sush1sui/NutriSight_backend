@@ -170,7 +170,8 @@ export function getNutrientsFromNutritionix(item: any) {
 }
 
 export function extractValuesWithUnitsFromOFF(nutrients: Record<string, any>) {
-  const out: { name: string; value: number; unit: string }[] = [];
+  // build raw list from *_value keys
+  let out: { name: string; value: number; unit: string }[] = [];
 
   const formatName = (k: string) =>
     capitalizeFirstLetter(k.replace(/[-_]/g, " ").trim());
@@ -183,6 +184,7 @@ export function extractValuesWithUnitsFromOFF(nutrients: Record<string, any>) {
 
     const base = key.replace(/_?value$/i, "");
     const unitKey = `${base}_unit`;
+
     let unit = "g";
     if (unitKey in nutrients && nutrients[unitKey] != null) {
       unit = String(nutrients[unitKey]);
@@ -193,26 +195,54 @@ export function extractValuesWithUnitsFromOFF(nutrients: Record<string, any>) {
     out.push({ name: formatName(base), value: num, unit });
   }
 
-  // Ensure energy-kcal_serving is present with its unit
-  if ("energy-kcal_serving" in nutrients) {
-    const val = Number(nutrients["energy-kcal_serving"]);
-    if (Number.isFinite(val)) {
-      const unit = String(nutrients["energy-kcal_unit"] ?? "kcal");
-      const name = formatName("energy-kcal_serving");
-      if (!out.some((x) => x.name === name)) {
-        out.push({ name, value: val, unit });
+  // Consolidate energy-related entries into a single canonical "Energy kcal" field
+  const energyIdxs = out
+    .map((v, i) => ({ i, name: v.name }))
+    .filter((v) => /^energy/i.test(v.name))
+    .map((v) => v.i);
+
+  if (energyIdxs.length > 0) {
+    const energyItems = energyIdxs.map((idx) => out[idx]);
+
+    // priority: serving-specific -> explicit energy kcal/energy -> computed -> highest value
+    const serving = energyItems.find((e) => /serving/i.test(e.name));
+    const explicit =
+      energyItems.find((e) => /^energy\s*kcal$/i.test(e.name)) ||
+      energyItems.find((e) => /^energy$/i.test(e.name));
+    const computed = energyItems.find((e) => /computed/i.test(e.name));
+    const chosen =
+      serving ||
+      explicit ||
+      computed ||
+      energyItems.sort((a, b) => b.value - a.value)[0];
+
+    // remove all existing energy entries
+    out = out.filter((x) => !/^energy/i.test(x.name));
+
+    // push a single normalized energy entry
+    out.push({
+      name: "Energy kcal",
+      value: Number(chosen.value || 0),
+      unit: chosen.unit || "kcal",
+    });
+  }
+
+  // Deduplicate by nutrient name (case-insensitive): keep the entry with the largest numeric value
+  const dedup = new Map<
+    string,
+    { name: string; value: number; unit: string }
+  >();
+  for (const item of out) {
+    const key = (item.name || "").toLowerCase().trim();
+    if (!dedup.has(key)) {
+      dedup.set(key, item);
+    } else {
+      const existing = dedup.get(key)!;
+      if (Number(item.value || 0) > Number(existing.value || 0)) {
+        dedup.set(key, item);
       }
     }
   }
 
-  // Record energy-kcal_unit as an entry (value 0) so caller sees the unit
-  if ("energy-kcal_unit" in nutrients) {
-    const unit = String(nutrients["energy-kcal_unit"]);
-    const name = formatName("energy-kcal_unit");
-    if (!out.some((x) => x.name === name)) {
-      out.push({ name, value: 0, unit });
-    }
-  }
-
-  return out;
+  return Array.from(dedup.values());
 }

@@ -140,6 +140,8 @@ export async function barcodeHandler(req: Request, res: Response) {
           },
         });
         return;
+      } else {
+        console.log("No USDA data found, trying Nutritionix...");
       }
     }
     console.log("No USDA data found, trying Nutritionix...");
@@ -223,10 +225,11 @@ export async function barcodeHandler(req: Request, res: Response) {
             },
           });
           return;
+        } else {
+          console.log("No Nutritionix data found, trying Open Food Facts...");
         }
       }
     }
-    console.log("No Nutritionix data found, trying Open Food Facts...");
 
     console.log("Fetching data from Open Food Facts API...");
     // fallback to Open Food Facts if USDA API fails
