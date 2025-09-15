@@ -168,7 +168,14 @@ export async function barcodeHandler(req: Request, res: Response) {
           (req.user as any).allergens,
           getNutrientsFromNutritionix(food.full_nutrients),
           true,
-          food.nf_ingredient_statement
+          typeof food.nf_ingredient_statement === "string"
+            ? (food.nf_ingredient_statement as string)
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : Array.isArray(food.nf_ingredient_statement)
+            ? food.nf_ingredient_statement
+            : []
         );
         if (organizedResult && organizedResult.groupedNutrition) {
           const convertedGroupedNutrition =
