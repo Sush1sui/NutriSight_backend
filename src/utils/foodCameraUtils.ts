@@ -142,28 +142,14 @@ export function extractAllIngredientTexts(ingredients: any[]): string[] {
 export function getNutrientsFromNutritionix(item: any) {
   const out: { name: string; value: number; unit: string }[] = [];
 
-  if (Array.isArray(item.full_nutrients)) {
-    for (const fn of item.full_nutrients) {
-      const map =
-        NUTRITIONIX_NUTRIENT_MAP[
-          fn.attr_id as keyof typeof NUTRITIONIX_NUTRIENT_MAP
-        ];
-      if (map) {
-        // skip if already present (nf_* took precedence)
-        if (!out.some((x) => x.name === map.name)) {
-          out.push({ name: map.name, value: Number(fn.value), unit: map.unit });
-        }
-      }
+  for (const fn of item) {
+    const map =
+      NUTRITIONIX_NUTRIENT_MAP[
+        fn.attr_id as keyof typeof NUTRITIONIX_NUTRIENT_MAP
+      ];
+    if (map) {
+      out.push({ name: map.name, value: Number(fn.value), unit: map.unit });
     }
-  }
-
-  // add serving info (optional)
-  if (item.serving_weight_grams != null) {
-    out.push({
-      name: "serving weight",
-      value: Number(item.serving_weight_grams),
-      unit: "g",
-    });
   }
 
   console.log("Nutritionix nutrients:", out);
