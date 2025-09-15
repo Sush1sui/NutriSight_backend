@@ -142,6 +142,7 @@ export async function barcodeHandler(req: Request, res: Response) {
         return;
       }
     }
+    console.log("No USDA data found, trying Nutritionix...");
 
     //fallback to nutritionix
     console.log("Fetching data from Nutritionix API...");
@@ -225,6 +226,7 @@ export async function barcodeHandler(req: Request, res: Response) {
         }
       }
     }
+    console.log("No Nutritionix data found, trying Open Food Facts...");
 
     console.log("Fetching data from Open Food Facts API...");
     // fallback to Open Food Facts if USDA API fails
@@ -258,22 +260,14 @@ export async function barcodeHandler(req: Request, res: Response) {
       ? extractValuesWithUnitsFromOFF(offData.product.nutriments)
       : [];
 
+    console.log(formattedNutriments);
+
     const organizedResult = await scanAllergensAndOrganizeNutrition(
       offData.product.product_name,
       (req.user as any).allergens,
       formattedNutriments,
       true,
-      ingredientNames,
-      (() => {
-        const energyNutrient = formattedNutriments.find(
-          (n) =>
-            n.name.toLowerCase().includes("energy") ||
-            n.name.toLowerCase().includes("calories")
-        );
-        return energyNutrient
-          ? `${energyNutrient.value}${energyNutrient.unit}`
-          : undefined;
-      })()
+      ingredientNames
     );
 
     if (!organizedResult) {
