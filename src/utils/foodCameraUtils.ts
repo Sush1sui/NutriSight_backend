@@ -166,6 +166,7 @@ export function getNutrientsFromNutritionix(item: any) {
     });
   }
 
+  console.log("Nutritionix nutrients:", out);
   return out;
 }
 
