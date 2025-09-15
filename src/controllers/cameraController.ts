@@ -161,7 +161,7 @@ export async function barcodeHandler(req: Request, res: Response) {
     if (nxResponse.ok) {
       const data = (await nxResponse.json()) as any;
       const food = data?.foods ? data.foods[0] : null;
-      console.log("Nutritionix data:", data);
+
       if (food) {
         const organizedResult = await scanAllergensAndOrganizeNutrition(
           food.food_name,
