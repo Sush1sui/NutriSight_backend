@@ -16,53 +16,58 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendOtp = async (req: Request, res: Response) => {
-  const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-  if (!email) {
-    res.status(400).json({ message: "Email is required" });
-    return;
-  }
+    if (!email) {
+      res.status(400).json({ message: "Email is required" });
+      return;
+    }
 
-  // Check if user exists
-  const existing = await UserAccount.findOne({ email });
-  if (existing && existing.isVerified) {
-    res.status(409).json({ message: "Email already registered" });
-    return;
-  }
+    // Check if user exists and already verified
+    const existing = await UserAccount.findOne({ email });
+    if (existing && existing.isVerified) {
+      res.status(409).json({ message: "Email already registered" });
+      return;
+    }
 
-  const otp = crypto.randomInt(1000, 9999).toString();
-  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    const otp = crypto.randomInt(1000, 9999).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
-  // Use updateOne with upsert to handle both new and unverified users
-  await UserAccount.updateOne(
-    { email },
-    {
-      $set: {
-        // birthdate: new Date("2002-06-24"),
-        // height: 5.2, // Example height in feet
-        // weight: 57, // Example weight in kg
-        // targetWeight: 55, // Example target weight in kg
-        // bmi: 22.5, // Example BMI
-        // allergens: ["nuts", "gluten"], // Example allergens
-        // medicalConditions: ["high blood pressure"], // Example medical conditions
-        // dietHistory: [],
-        otp,
-        otpExpires,
-        isVerified: false,
+    // Upsert OTP and expiry
+    await UserAccount.updateOne(
+      { email },
+      {
+        $set: {
+          otp,
+          otpExpires,
+          isVerified: false,
+        },
       },
-    },
-    { upsert: true }
-  );
+      { upsert: true }
+    );
 
-  // Send OTP to email
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Your OTP for Verification",
-    text: `Your OTP is: ${otp}`,
-  };
+    // Fetch the (new or updated) user to return ID
+    const user = await UserAccount.findOne({ email });
 
-  await transporter.sendMail(mailOptions);
+    // Send OTP to email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP for Verification",
+      text: `Your OTP is: ${otp}`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    // Respond to client so request doesn't hang
+    res.status(200).json({ message: "OTP sent to email", userId: user?._id });
+    return;
+  } catch (error) {
+    console.error("Error in sendOtp:", error);
+    res.status(500).json({ message: "Error sending OTP email" });
+    return;
+  }
 };
 
 export const register = async (req: Request, res: Response) => {

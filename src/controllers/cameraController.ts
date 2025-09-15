@@ -339,7 +339,10 @@ export async function barcodeHandler(req: Request, res: Response) {
         triggeredAllergens: organizedResult.triggeredAllergens,
         nutritionData: convertedGroupedNutrition,
         servingSize:
-          offData.product.serving_size || offData.product.quantity || "N/A",
+          offData.product.serving_size ||
+          offData.product.serving_quantity +
+            offData.product.serving_quantity_unit ||
+          "N/A",
         source: "open food facts",
       },
     });
