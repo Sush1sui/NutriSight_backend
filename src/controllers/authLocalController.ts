@@ -193,16 +193,6 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     return;
   }
 
-  // console.log("Onboarding data:", {
-  //   name,
-  //   allergens,
-  //   gender,
-  //   age,
-  //   height,
-  //   weight,
-  //   email,
-  // });
-
   // Update user profile with onboarding data
   const user = await UserAccount.findOne({ email });
   if (!user) {
@@ -210,10 +200,44 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     return;
   }
 
+  // Convert height to meters
   const feet_x_12 = heightFeet * 12;
   const initHeight = feet_x_12 + heightInches;
   const heightMeters = initHeight * 0.0254;
   const heightMetersPowerOf2 = heightMeters ** 2;
+
+  const heightInCM = heightMeters * 100;
+  const heightInCMLess100 = heightInCM - 100;
+  const heightInCMMultipledBy0_1 = 0.1 * heightInCM;
+  const desiredWeight = heightInCMLess100 - heightInCMMultipledBy0_1;
+
+  let targetCalories =
+    activityLevel === "sedentary"
+      ? desiredWeight * 30
+      : activityLevel === "active"
+      ? desiredWeight * 35
+      : null;
+
+  if (!targetCalories) {
+    res.status(400).json({ message: "Invalid activity level" });
+    return;
+  }
+
+  if (weightGoal === "lose") {
+    targetCalories -= 500; // Reduce by 500 for weight loss
+  } else if (weightGoal === "gain") {
+    targetCalories += 500; // Increase by 500 for weight gain
+  }
+
+  const calories15Percent = 0.15 * targetCalories;
+  const calories25Percent = 0.25 * targetCalories;
+  const calories60Percent = 0.6 * targetCalories;
+
+  // Macronutrient distribution (15% fat, 25% protein, 60% carbs)
+  // All converted to grams
+  const targetFat = calories15Percent / 9;
+  const targetProtein = calories25Percent / 4;
+  const targetCarbs = calories60Percent / 4;
 
   user.name = name;
   user.allergens = allergens;
@@ -226,6 +250,12 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
   user.weightGoal = weightGoal;
   user.targetWeight = targetWeight;
   user.activityLevel = activityLevel;
+  user.dailyRecommendation = {
+    calories: Math.round(targetCalories),
+    protein: Math.round(targetProtein),
+    carbs: Math.round(targetCarbs),
+    fat: Math.round(targetFat),
+  };
 
   await user.save();
   // login user
