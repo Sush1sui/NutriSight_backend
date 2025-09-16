@@ -6,7 +6,7 @@ import { getDateString } from "../utils/getDateString";
 
 const ALLOWED_FIELDS = [
   "gender",
-  "age",
+  "birthDate",
   "height",
   "weight",
   "targetWeight",
