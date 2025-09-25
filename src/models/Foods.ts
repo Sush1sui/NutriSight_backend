@@ -4,6 +4,8 @@ export interface FoodDBType {
   name: string;
   nutrition: { name: string; value: number; unit: string }[];
   serving_size: string;
+  source: string;
+  common_ingredients: string[];
 }
 
 const FoodSchema = new mongoose.Schema<FoodDBType>({
@@ -16,6 +18,8 @@ const FoodSchema = new mongoose.Schema<FoodDBType>({
     },
   ],
   serving_size: { type: String, required: true },
+  source: { type: String, required: true },
+  common_ingredients: [{ type: String }],
 });
 
 const FoodModel = mongoose.model<FoodDBType>("Food", FoodSchema);
