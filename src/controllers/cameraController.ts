@@ -514,7 +514,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           message: "Food data retrieved successfully",
           data: {
             foodName: food.name,
-            ingredients: geminiRes.ingredients,
+            ingredients: food.common_ingredients,
             triggeredAllergens: geminiRes.triggeredAllergens,
             nutritionData: convertedGroupedNutrition,
             servingSize: food.serving_size,
