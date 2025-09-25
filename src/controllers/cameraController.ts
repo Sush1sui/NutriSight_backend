@@ -462,7 +462,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         (req.user as any).allergens,
         food.nutrition,
         false,
-        [],
+        food.common_ingredients || [],
         food.serving_size
       );
 
