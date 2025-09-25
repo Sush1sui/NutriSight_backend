@@ -505,7 +505,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                   n.name
                 ).value,
                 unit: "g",
-              })),
+              }))
+              .filter((n) => n.value > 0.01),
           })
         );
 
@@ -517,7 +518,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
             triggeredAllergens: geminiRes.triggeredAllergens,
             nutritionData: convertedGroupedNutrition,
             servingSize: food.serving_size,
-            source: food.source,
+            source: food.source || "database",
           },
         });
         return;
@@ -604,7 +605,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                     n.name
                   ).value,
                   unit: "g",
-                })),
+                }))
+                .filter((n) => n.value > 0.01),
             })
           );
 
@@ -696,7 +698,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                     n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " ")
                   ).value,
                   unit: "g",
-                })),
+                }))
+                .filter((n) => n.value > 0.01),
             })
           );
           const result = {
@@ -737,7 +740,9 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         servingSize: "150g",
         ingredients: geminiRes.ingredients,
         triggeredAllergens: geminiRes.triggeredAllergens,
-        nutritionData: geminiRes.groupedNutrition,
+        nutritionData: geminiRes.groupedNutrition.map((g) =>
+          g.items.filter((n) => n.value > 0.01)
+        ),
         source: "gemini",
       },
     });
