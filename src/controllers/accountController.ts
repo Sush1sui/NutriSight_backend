@@ -18,6 +18,7 @@ const ALLOWED_FIELDS = [
   "firstName",
   "lastName",
   "loggedWeights",
+  "dailyRecommendation",
 ];
 
 export const changeProfilePicture = async (req: Request, res: Response) => {
