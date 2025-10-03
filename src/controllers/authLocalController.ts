@@ -217,12 +217,16 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
 
   const desiredWeight = 0.1 * heightInchesToCmLess100;
 
+  console.log("Desired Weight (kg):", desiredWeight);
+
   let targetCalories =
     activityLevel === "sedentary"
       ? desiredWeight * 30
       : activityLevel === "active"
       ? desiredWeight * 35
       : null;
+
+  console.log("Target Calories before goal adjustment:", targetCalories);
 
   if (!targetCalories) {
     res.status(400).json({ message: "Invalid activity level" });
@@ -235,6 +239,8 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     targetCalories += 300; // Increase by 300 for weight gain
   }
 
+  console.log("Target Calories after goal adjustment:", targetCalories);
+
   const calories15Percent = 0.15 * targetCalories;
   const calories25Percent = 0.25 * targetCalories;
   const calories60Percent = 0.6 * targetCalories;
@@ -244,6 +250,11 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
   const targetFat = calories15Percent / 9;
   const targetProtein = calories25Percent / 4;
   const targetCarbs = calories60Percent / 4;
+
+  console.log("Macronutrient Targets (grams):");
+  console.log("Protein:", targetProtein);
+  console.log("Carbs:", targetCarbs);
+  console.log("Fat:", targetFat);
 
   user.name = name;
   user.allergens = allergens;
