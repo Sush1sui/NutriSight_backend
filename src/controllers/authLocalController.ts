@@ -214,8 +214,10 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
 
   const heightInchesToCm = totalHeightInches * 2.54;
   const heightInchesToCmLess100 = heightInchesToCm - 100;
+  const heightInchesToCmLess100MultipledBy0_1 = 0.1 * heightInchesToCmLess100;
 
-  const desiredWeight = 0.1 * heightInchesToCmLess100;
+  const desiredWeight =
+    heightInchesToCmLess100 - heightInchesToCmLess100MultipledBy0_1;
 
   console.log("Desired Weight (kg):", desiredWeight);
 
