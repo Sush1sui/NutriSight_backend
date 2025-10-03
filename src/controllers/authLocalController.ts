@@ -208,10 +208,14 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
   const heightMeters = initHeight * 0.0254;
   const heightMetersPowerOf2 = heightMeters ** 2;
 
-  const heightInCM = heightMeters * 100;
-  const heightInCMLess100 = heightInCM - 100;
-  const heightInCMMultipledBy0_1 = 0.1 * heightInCM;
-  const desiredWeight = heightInCMLess100 - heightInCMMultipledBy0_1;
+  // convert height to cm and calculate desired weight
+  const heightFeetToInches = heightFeet * 12;
+  const totalHeightInches = heightFeetToInches + heightInches;
+
+  const heightInchesToCm = totalHeightInches * 2.54;
+  const heightInchesToCmLess100 = heightInchesToCm - 100;
+
+  const desiredWeight = 0.1 * heightInchesToCmLess100;
 
   let targetCalories =
     activityLevel === "sedentary"
