@@ -1,16 +1,31 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export interface NutritionalData {
-  [key: string]: number;
-}
+export type ScanResultType = {
+  id?: any;
+  name?: string;
+  foodName?: string;
+  brand?: string;
+  servingSize: string;
+  ingredients: string[];
+  triggeredAllergens: { ingredient: string; allergen: string }[];
+  nutritionData: {
+    title: string;
+    items: {
+      name: string;
+      value: number;
+      unit: string;
+    }[];
+  }[];
+  source?: string; // "usda" | "nutritionix" | "open food facts" | "gemini" | "mynetdiary"
+  quantity?: number; // quantity scanned
+};
 
 export interface DietHistory {
   date: string; // Store date as string in "YYYY-MM-DD" format
-  nutritionalData: NutritionalData[];
-  breakfast: { name: string; calorie: number }[];
-  lunch: { name: string; calorie: number }[];
-  dinner: { name: string; calorie: number }[];
-  otherMealTime: { name: string; calorie: number }[];
+  breakfast: ScanResultType[];
+  lunch: ScanResultType[];
+  dinner: ScanResultType[];
+  otherMealTime: ScanResultType[];
 }
 
 export interface LoggedWeight {
@@ -83,19 +98,10 @@ const UserAccountSchema = new Schema<IUserAccount>({
     type: [
       {
         date: { type: String, required: true },
-        nutritionalData: [
-          {
-            type: Object,
-            required: true,
-          },
-        ],
-        breakfast: { type: [{ name: String, calorie: Number }], default: [] },
-        lunch: { type: [{ name: String, calorie: Number }], default: [] },
-        dinner: { type: [{ name: String, calorie: Number }], default: [] },
-        otherMealTime: {
-          type: [{ name: String, calorie: Number }],
-          default: [],
-        },
+        breakfast: { type: [Schema.Types.Mixed], default: [] },
+        lunch: { type: [Schema.Types.Mixed], default: [] },
+        dinner: { type: [Schema.Types.Mixed], default: [] },
+        otherMealTime: { type: [Schema.Types.Mixed], default: [] },
       },
     ],
     default: [],

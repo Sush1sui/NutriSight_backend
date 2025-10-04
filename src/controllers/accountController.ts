@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import UserAccount, { IUserAccount } from "../models/UserAccount";
 import { v2 as cloudinary } from "cloudinary";
-import { flattenNutritionalData } from "../utils/flattenNutritionalData";
 import { getDateString } from "../utils/getDateString";
 
 const ALLOWED_FIELDS = [
@@ -120,13 +119,7 @@ export const updateDietHistory = async (req: Request, res: Response) => {
       return;
     }
 
-    console.log("Breakfast payload:", dietHistoryPayload.breakfast);
-    console.log("Lunch payload:", dietHistoryPayload.lunch);
-    console.log("Dinner payload:", dietHistoryPayload.dinner);
-    console.log("Other meal time payload:", dietHistoryPayload.otherMealTime);
-
     const uid = (req.user as { _id: string })._id;
-
     const user = await UserAccount.findById(uid);
 
     if (!user) {
@@ -134,77 +127,54 @@ export const updateDietHistory = async (req: Request, res: Response) => {
       return;
     }
 
-    // Flatten the incoming nutritionalData array
-    const flattenedNutritionalData = flattenNutritionalData(
-      dietHistoryPayload.nutritionalData
-    );
+    // Normalize incoming meal arrays (expect ScanResultType objects)
+    const incomingMeals = {
+      breakfast: Array.isArray(dietHistoryPayload.breakfast)
+        ? dietHistoryPayload.breakfast
+        : [],
+      lunch: Array.isArray(dietHistoryPayload.lunch)
+        ? dietHistoryPayload.lunch
+        : [],
+      dinner: Array.isArray(dietHistoryPayload.dinner)
+        ? dietHistoryPayload.dinner
+        : [],
+      otherMealTime: Array.isArray(dietHistoryPayload.otherMealTime)
+        ? dietHistoryPayload.otherMealTime
+        : [],
+    };
 
     const incomingDateStr = getDateString(dietHistoryPayload.date);
 
-    // find diet history date
-    if (user.dietHistory) {
-      const existingDietHistory = user.dietHistory.find((entry) => {
-        const entryDateStr = getDateString(entry.date);
-        return entryDateStr === incomingDateStr;
-      });
+    // find existing entry for the same date (compare normalized date string)
+    const existingIndex = (user.dietHistory || []).findIndex((entry) => {
+      return getDateString(entry.date) === incomingDateStr;
+    });
 
-      if (existingDietHistory) {
-        const existingArray = existingDietHistory.nutritionalData;
-
-        if (existingArray.length > 0) {
-          const lastEntry = Object.assign({}, ...existingArray);
-
-          // Increment or add each nutrient
-          for (const key of Object.keys(flattenedNutritionalData)) {
-            if (lastEntry[key] !== undefined) {
-              lastEntry[key] += flattenedNutritionalData[key];
-            } else {
-              lastEntry[key] = flattenedNutritionalData[key];
-            }
-          }
-          existingDietHistory.nutritionalData = [lastEntry];
-        } else {
-          existingDietHistory.nutritionalData.push(flattenedNutritionalData);
-        }
-
-        // Append new meals to existing arrays
-        existingDietHistory.breakfast = [
-          ...(existingDietHistory.breakfast || []),
-          ...(dietHistoryPayload.breakfast || []),
-        ];
-        existingDietHistory.lunch = [
-          ...(existingDietHistory.lunch || []),
-          ...(dietHistoryPayload.lunch || []),
-        ];
-        existingDietHistory.dinner = [
-          ...(existingDietHistory.dinner || []),
-          ...(dietHistoryPayload.dinner || []),
-        ];
-        existingDietHistory.otherMealTime = [
-          ...(existingDietHistory.otherMealTime || []),
-          ...(dietHistoryPayload.otherMealTime || []),
-        ];
-      } else {
-        // New date: push new entry
-        user.dietHistory.push({
-          date: dietHistoryPayload.date,
-          nutritionalData: [flattenedNutritionalData],
-          breakfast: dietHistoryPayload.breakfast || [],
-          lunch: dietHistoryPayload.lunch || [],
-          dinner: dietHistoryPayload.dinner || [],
-          otherMealTime: dietHistoryPayload.otherMealTime || [],
-        });
-      }
+    if (user.dietHistory && existingIndex >= 0) {
+      // append incoming ScanResultType items to existing meal arrays
+      const existing = user.dietHistory[existingIndex];
+      existing.breakfast = [
+        ...(existing.breakfast || []),
+        ...incomingMeals.breakfast,
+      ];
+      existing.lunch = [...(existing.lunch || []), ...incomingMeals.lunch];
+      existing.dinner = [...(existing.dinner || []), ...incomingMeals.dinner];
+      existing.otherMealTime = [
+        ...(existing.otherMealTime || []),
+        ...incomingMeals.otherMealTime,
+      ];
+      // replace entry
+      user.dietHistory[existingIndex] = existing;
     } else {
-      // No diet history at all: create new array
+      // push a new date entry with the incoming meal arrays
       user.dietHistory = [
+        ...(user.dietHistory || []),
         {
           date: dietHistoryPayload.date,
-          nutritionalData: [flattenedNutritionalData],
-          breakfast: dietHistoryPayload.breakfast || [],
-          lunch: dietHistoryPayload.lunch || [],
-          dinner: dietHistoryPayload.dinner || [],
-          otherMealTime: dietHistoryPayload.otherMealTime || [],
+          breakfast: incomingMeals.breakfast,
+          lunch: incomingMeals.lunch,
+          dinner: incomingMeals.dinner,
+          otherMealTime: incomingMeals.otherMealTime,
         },
       ];
     }
