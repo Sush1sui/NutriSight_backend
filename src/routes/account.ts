@@ -4,6 +4,7 @@ import {
   changeProfilePicture,
   updateAccount,
   updateDietHistory,
+  getDietHistoryByDate,
 } from "../controllers/accountController";
 
 const router = Router();
@@ -16,5 +17,6 @@ router.post(
 
 router.put("/update", updateAccount);
 router.put("/update-diet-history", updateDietHistory);
+router.post("/diet-history", getDietHistoryByDate);
 
 export default router;

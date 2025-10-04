@@ -204,7 +204,7 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
 
   // Convert height to meters
   const feet_x_12 = heightFeet * 12;
-  const initHeight = feet_x_12 + heightInches;
+  const initHeight = feet_x_12 + Math.round(Number(heightInches));
   const heightMeters = initHeight * 0.0254;
   const heightMetersPowerOf2 = heightMeters ** 2;
 
@@ -264,9 +264,9 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
   user.gender = gender;
   user.birthDate = birthDate;
   user.heightFeet = heightFeet;
-  user.heightInches = heightInches;
-  user.weight = weight;
-  user.bmi = weight / heightMetersPowerOf2; // Calculate BMI
+  user.heightInches = Math.round(Number(heightInches));
+  user.weight = Math.round(Number(weight));
+  user.bmi = Math.round(Number(weight)) / heightMetersPowerOf2; // Calculate BMI
   user.weightGoal = weightGoal;
   user.targetWeight = targetWeight;
   user.activityLevel = activityLevel;

@@ -188,3 +188,40 @@ export const updateDietHistory = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const getDietHistoryByDate = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+
+    const { date } = req.body;
+    if (!date) {
+      res.status(400).json({ error: "Date parameter is required" });
+      return;
+    }
+
+    const uid = (req.user as { _id: string })._id;
+    const user = await UserAccount.findById(uid);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const targetDateStr = getDateString(date);
+    const entry = (user.dietHistory || []).find(
+      (record) => getDateString(record.date) === targetDateStr
+    );
+    if (!entry) {
+      res
+        .status(200)
+        .json({ message: "No entry for this date", dietHistory: null });
+      return;
+    }
+    res.status(200).json({ message: "Diet history found", dietHistory: entry });
+  } catch (error) {
+    console.error("Error retrieving diet history:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
