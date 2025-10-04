@@ -225,3 +225,76 @@ export const getDietHistoryByDate = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const deleteDietHistoryByDate = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+    const { date, mealTime, id } = req.body;
+    if (!date || !mealTime || !id) {
+      res
+        .status(400)
+        .json({ error: "Date, mealTime, and id parameters are required" });
+      return;
+    }
+    const uid = (req.user as { _id: string })._id;
+    const user = await UserAccount.findById(uid);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    const targetDateStr = getDateString(date);
+    const entryIndex = (user.dietHistory || []).findIndex(
+      (record) => getDateString(record.date) === targetDateStr
+    );
+    if (entryIndex < 0) {
+      res
+        .status(200)
+        .json({ message: "No entry for this date", dietHistory: null });
+      return;
+    }
+    const entry = user.dietHistory![entryIndex];
+    if (
+      !entry[mealTime as keyof typeof entry] ||
+      !Array.isArray(entry[mealTime as keyof typeof entry])
+    ) {
+      res.status(400).json({ error: "Invalid mealTime parameter" });
+      return;
+    }
+    // filter out the item with the given id
+    if (mealTime === "breakfast") {
+      entry.breakfast = entry.breakfast.filter((item) => item.id !== id);
+    } else if (mealTime === "lunch") {
+      entry.lunch = entry.lunch.filter((item) => item.id !== id);
+    } else if (mealTime === "dinner") {
+      entry.dinner = entry.dinner.filter((item) => item.id !== id);
+    } else if (mealTime === "otherMealTime") {
+      entry.otherMealTime = entry.otherMealTime.filter(
+        (item) => item.id !== id
+      );
+    }
+
+    // if all meal arrays are empty, remove the entire date entry
+    if (
+      entry.breakfast.length === 0 &&
+      entry.lunch.length === 0 &&
+      entry.dinner.length === 0 &&
+      entry.otherMealTime.length === 0
+    ) {
+      user.dietHistory!.splice(entryIndex, 1);
+    }
+
+    await user.save();
+    res
+      .status(200)
+      .json({
+        message: "Diet history entry deleted",
+        dietHistory: user.dietHistory,
+      });
+  } catch (error) {
+    console.error("Error deleting diet history:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

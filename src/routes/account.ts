@@ -5,6 +5,7 @@ import {
   updateAccount,
   updateDietHistory,
   getDietHistoryByDate,
+  deleteDietHistoryByDate,
 } from "../controllers/accountController";
 
 const router = Router();
@@ -18,5 +19,6 @@ router.post(
 router.put("/update", updateAccount);
 router.put("/update-diet-history", updateDietHistory);
 router.post("/diet-history", getDietHistoryByDate);
+router.delete("/diet-history", deleteDietHistoryByDate);
 
 export default router;
