@@ -287,12 +287,10 @@ export const deleteDietHistoryByDate = async (req: Request, res: Response) => {
     }
 
     await user.save();
-    res
-      .status(200)
-      .json({
-        message: "Diet history entry deleted",
-        dietHistory: user.dietHistory,
-      });
+    res.status(200).json({
+      message: "Diet history entry deleted",
+      user, // so that frontend can update local state
+    });
   } catch (error) {
     console.error("Error deleting diet history:", error);
     res.status(500).json({ error: "Internal server error" });
