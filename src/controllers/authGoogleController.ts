@@ -29,18 +29,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
       return;
     }
 
-    const {
-      sub: id,
-      email,
-      name,
-      given_name,
-      family_name,
-      picture,
-      profile,
-    } = payload;
-
-    console.log("Google token picture:", picture);
-    console.log("Google token profile link:", profile);
+    const { sub: id, email, name, given_name, family_name, picture } = payload;
 
     let user = await UserAccount.findOne({ gmailId: id });
 
@@ -53,18 +42,40 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         existingUser.firstName = given_name || undefined;
         existingUser.lastName = family_name || undefined;
         existingUser.email = email;
-        // existingUser.birthdate = new Date("2002-06-24");
-        // existingUser.height = 5.2; // Example height in feet
-        // existingUser.weight = 57; // Example weight in kg
-        // existingUser.targetWeight = 55; // Example target weight in kg
-        // existingUser.bmi = 22.5; // Example BMI
-        // existingUser.allergens = ["nuts", "gluten"]; // Example allergens
-        // existingUser.medicalConditions = ["high blood pressure"]; // Example medical conditions
-        // existingUser.dietHistory = []; // Initialize diet history
-        user = await existingUser.save();
-      }
 
-      if (existingUser) {
+        // if google profile picture exists, upload to cloudinary and save link
+        if (picture && typeof picture === "string") {
+          try {
+            if (existingUser.profilePublicId) {
+              try {
+                await cloudinary.uploader.destroy(existingUser.profilePublicId);
+              } catch (e) {
+                console.warn("Cloudinary destroy failed (non-fatal):", e);
+              }
+            }
+
+            const uploadRes = await cloudinary.uploader.upload(picture, {
+              folder: "user_profiles",
+              public_id: `profile_${user._id}_${Date.now()}`,
+              overwrite: true,
+              resource_type: "image",
+              transformation: [{ width: 500, height: 500, crop: "limit" }],
+            });
+
+            if (uploadRes && uploadRes.secure_url) {
+              user.profileLink = uploadRes.secure_url || uploadRes.url;
+              user.profilePublicId = uploadRes.public_id;
+            }
+          } catch (error) {
+            console.warn(
+              "Cloudinary upload failed during Google update (non-fatal):",
+              error
+            );
+          }
+        }
+
+        user = await existingUser.save();
+
         req.logIn(existingUser, (err) => {
           if (err) {
             console.error("Session login error after token verification:", err);
@@ -95,23 +106,29 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         name,
         firstName: given_name || undefined,
         lastName: family_name || undefined,
-        isVerified: true, // Email is verified by Google
+        isVerified: false, // Email is verified by Google
       });
 
       // if google profile picture exists, upload to cloudinary and save link
       if (picture && typeof picture === "string") {
-        const uploadRes = await cloudinary.uploader.upload(picture, {
-          folder: "user_profiles",
-          public_id: `profile_${user._id}_${Date.now()}`,
-          overwrite: true,
-          resource_type: "image",
-          transformation: [{ width: 500, height: 500, crop: "limit" }],
-        });
+        try {
+          const uploadRes = await cloudinary.uploader.upload(picture, {
+            folder: "user_profiles",
+            public_id: `profile_${user._id}_${Date.now()}`,
+            overwrite: true,
+            resource_type: "image",
+            transformation: [{ width: 500, height: 500, crop: "limit" }],
+          });
 
-        if (uploadRes && uploadRes.secure_url) {
-          user.profileLink = uploadRes.secure_url || uploadRes.url;
-          user.profilePublicId = uploadRes.public_id;
-          await user.save();
+          if (uploadRes && uploadRes.secure_url) {
+            user.profileLink = uploadRes.secure_url || uploadRes.url;
+            user.profilePublicId = uploadRes.public_id;
+          }
+        } catch (error) {
+          console.warn(
+            "Cloudinary upload failed during Google update (non-fatal):",
+            error
+          );
         }
       }
 
