@@ -63,8 +63,8 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
             });
 
             if (uploadRes && uploadRes.secure_url) {
-              user.profileLink = uploadRes.secure_url || uploadRes.url;
-              user.profilePublicId = uploadRes.public_id;
+              existingUser.profileLink = uploadRes.secure_url || uploadRes.url;
+              existingUser.profilePublicId = uploadRes.public_id;
             }
           } catch (error) {
             console.warn(
@@ -106,7 +106,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         name,
         firstName: given_name || undefined,
         lastName: family_name || undefined,
-        isVerified: false, // Email is verified by Google
+        isVerified: false,
       });
 
       // if google profile picture exists, upload to cloudinary and save link
@@ -131,6 +131,8 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
           );
         }
       }
+
+      await user.save();
 
       res.status(200).json({
         message: "User authenticated successfully",
