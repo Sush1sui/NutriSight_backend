@@ -530,13 +530,12 @@ export async function getFoodDataHandler(req: Request, res: Response) {
     const usda_response = await fetch(
       `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(
         foodName
-      )}&dataType=Survey (FNDDS),Branded&api_key=${USDA_API_KEY}`
+      )}&dataType=Survey (FNDDS)&api_key=${USDA_API_KEY}`
     );
 
     if (usda_response.ok) {
       let data = (await usda_response.json()) as any;
       const food = data?.foods ? data.foods[0] : null;
-      console.log("USDA API response:", food);
       data = null;
 
       const results: {
