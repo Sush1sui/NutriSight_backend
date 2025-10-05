@@ -525,6 +525,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       }
     }
 
+    // fetch from usda api
     console.log("Attempting to fetch data from USDA API");
     const usda_response = await fetch(
       `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(
@@ -535,6 +536,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
     if (usda_response.ok) {
       let data = (await usda_response.json()) as any;
       const food = data?.foods ? data.foods[0] : null;
+      console.log("USDA API response:", food);
       data = null;
 
       const results: {
@@ -631,6 +633,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       }
     }
 
+    // fallback to nutritionix api
     console.log("Attempting to fetch data from Nutritionix API");
     const nutritionix_response = await fetch(
       "https://trackapi.nutritionix.com/v2/natural/nutrients",
@@ -720,6 +723,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       }
     }
 
+    // fallback to gemini api
+    console.log("Falling back to Gemini API for food data");
     const geminiRes = await geminiFallbackGroupedNutrition(
       foodName,
       (req.user as any).allergens,
