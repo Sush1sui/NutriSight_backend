@@ -134,7 +134,10 @@ export async function barcodeHandler(req: Request, res: Response) {
               (food.ingredients as string)?.split(",") ||
               organizedResult.ingredients,
             triggeredAllergens: organizedResult.triggeredAllergens,
-            nutritionData: convertedGroupedNutrition,
+            nutritionData: convertedGroupedNutrition.map((g) => ({
+              title: g.title ?? "",
+              items: g.items.filter((n) => !n.name.includes(":")),
+            })),
             servingSize: `${food.servingSize}${food.servingSizeUnit}`,
             source: "usda",
           },
@@ -614,7 +617,10 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           results.ingredients =
             (food.ingredients as string)?.split(",") || geminiRes.ingredients;
           results.triggeredAllergens = geminiRes.triggeredAllergens;
-          results.nutritionData = convertedGroupedNutrition;
+          results.nutritionData = convertedGroupedNutrition.map((g) => ({
+            title: g.title ?? "",
+            items: g.items.filter((n) => !n.name.includes(":")),
+          }));
           results.servingSize = "150g";
 
           if (
