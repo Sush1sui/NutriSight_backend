@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import UserAccount from "../models/UserAccount";
+import { v2 as cloudinary } from "cloudinary";
 
 // This is the CLIENT_ID of the web application from Google Cloud Console
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -94,16 +95,25 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         name,
         firstName: given_name || undefined,
         lastName: family_name || undefined,
-        // birthdate: new Date("2002-06-24"), // Example birthdate
-        // height: 5.2, // Example height in feet
-        // weight: 57, // Example weight in kg
-        // targetWeight: 55, // Example target weight in kg
-        // bmi: 22.5, // Example BMI
-        // allergens: ["nuts", "gluten"], // Example allergens
-        // medicalConditions: ["high blood pressure"], // Example medical conditions
-        // dietHistory: [], // Initialize diet history
         isVerified: true, // Email is verified by Google
       });
+
+      // if google profile picture exists, upload to cloudinary and save link
+      if (picture && typeof picture === "string") {
+        const uploadRes = await cloudinary.uploader.upload(picture, {
+          folder: "user_profiles",
+          public_id: `profile_${user._id}_${Date.now()}`,
+          overwrite: true,
+          resource_type: "image",
+          transformation: [{ width: 500, height: 500, crop: "limit" }],
+        });
+
+        if (uploadRes && uploadRes.secure_url) {
+          user.profileLink = uploadRes.secure_url || uploadRes.url;
+          user.profilePublicId = uploadRes.public_id;
+          await user.save();
+        }
+      }
 
       res.status(200).json({
         message: "User authenticated successfully",
