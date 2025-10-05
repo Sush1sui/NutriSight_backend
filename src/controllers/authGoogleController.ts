@@ -28,7 +28,18 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
       return;
     }
 
-    const { sub: id, email, name, given_name, family_name } = payload;
+    const {
+      sub: id,
+      email,
+      name,
+      given_name,
+      family_name,
+      picture,
+      profile,
+    } = payload;
+
+    console.log("Google token picture:", picture);
+    console.log("Google token profile link:", profile);
 
     let user = await UserAccount.findOne({ gmailId: id });
 
@@ -93,6 +104,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
         // dietHistory: [], // Initialize diet history
         isVerified: true, // Email is verified by Google
       });
+
       res.status(200).json({
         message: "User authenticated successfully",
         email: user.email,
