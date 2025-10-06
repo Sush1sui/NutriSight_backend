@@ -148,7 +148,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
     res.status(400).json({ message: "Invalid or expired OTP" });
     return;
   }
-  user.isVerified = true;
   user.otp = undefined;
   user.otpExpires = undefined;
   await user.save();
@@ -277,6 +276,8 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     fat: Math.round(targetFat),
   };
   user.loggedWeights = loggedWeightPayload;
+
+  user.isVerified = true; // Mark user as verified after onboarding
 
   await user.save();
   // login user
