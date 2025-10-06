@@ -112,16 +112,32 @@ export async function barcodeHandler(req: Request, res: Response) {
                   "cals",
                 ].includes(n.unit?.toLowerCase().trim())
               )
-              .map((n) => ({
-                name: n.name,
-                value: convertToGrams(
-                  n.value,
-                  n.unit,
-                  n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
-                  n.name
-                ).value,
-                unit: "g",
-              })),
+              .map((n) => {
+                if (
+                  n.name.toLowerCase().includes("energy") ||
+                  n.name.toLowerCase().includes("calorie") ||
+                  n.unit.toLowerCase() === "kcal" ||
+                  n.unit.toLowerCase() === "cal" ||
+                  n.unit.toLowerCase() === "cals"
+                ) {
+                  return {
+                    ...n,
+                    unit: "kcal",
+                  };
+                }
+
+                return {
+                  name: n.name,
+                  value: convertToGrams(
+                    n.value,
+                    n.unit,
+                    n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+                    n.name
+                  ).value,
+                  unit: "g",
+                };
+              })
+              .filter((n) => n.value > 0.01),
           })
         );
 
@@ -210,16 +226,35 @@ export async function barcodeHandler(req: Request, res: Response) {
                     "cals",
                   ].includes(n.unit?.toLowerCase().trim())
                 )
-                .map((n) => ({
-                  name: n.name,
-                  value: convertToGrams(
-                    n.value,
-                    n.unit,
-                    n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
-                    n.name
-                  ).value,
-                  unit: "g",
-                })),
+                .map((n) => {
+                  if (
+                    n.name.toLowerCase().includes("energy") ||
+                    n.name.toLowerCase().includes("calorie") ||
+                    n.unit.toLowerCase() === "kcal" ||
+                    n.unit.toLowerCase() === "cal" ||
+                    n.unit.toLowerCase() === "cals"
+                  ) {
+                    return {
+                      ...n,
+                      unit: "kcal",
+                    };
+                  }
+
+                  return {
+                    name: n.name,
+                    value: convertToGrams(
+                      n.value,
+                      n.unit,
+                      n.name
+                        .toLowerCase()
+                        .replace(/_/g, " ")
+                        .replace(/-/g, " "),
+                      n.name
+                    ).value,
+                    unit: "g",
+                  };
+                })
+                .filter((n) => n.value > 0.01),
             }));
           res.status(200).json({
             message: "Barcode data received successfully",
@@ -323,16 +358,32 @@ export async function barcodeHandler(req: Request, res: Response) {
               "cals",
             ].includes(n.unit?.toLowerCase().trim())
           )
-          .map((n) => ({
-            name: n.name,
-            value: convertToGrams(
-              n.value,
-              n.unit,
-              n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
-              n.name
-            ).value,
-            unit: "g",
-          })),
+          .map((n) => {
+            if (
+              n.name.toLowerCase().includes("energy") ||
+              n.name.toLowerCase().includes("calorie") ||
+              n.unit.toLowerCase() === "kcal" ||
+              n.unit.toLowerCase() === "cal" ||
+              n.unit.toLowerCase() === "cals"
+            ) {
+              return {
+                ...n,
+                unit: "kcal",
+              };
+            }
+
+            return {
+              name: n.name,
+              value: convertToGrams(
+                n.value,
+                n.unit,
+                n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+                n.name
+              ).value,
+              unit: "g",
+            };
+          })
+          .filter((n) => n.value > 0.01),
       })
     );
 
@@ -499,16 +550,31 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                   "cals",
                 ].includes(n.unit?.toLowerCase().trim())
               )
-              .map((n) => ({
-                name: n.name,
-                value: convertToGrams(
-                  n.value,
-                  n.unit,
-                  n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
-                  n.name
-                ).value,
-                unit: "g",
-              }))
+              .map((n) => {
+                if (
+                  n.name.toLowerCase().includes("energy") ||
+                  n.name.toLowerCase().includes("calorie") ||
+                  n.unit.toLowerCase() === "kcal" ||
+                  n.unit.toLowerCase() === "cal" ||
+                  n.unit.toLowerCase() === "cals"
+                ) {
+                  return {
+                    ...n,
+                    unit: "kcal",
+                  };
+                }
+
+                return {
+                  name: n.name,
+                  value: convertToGrams(
+                    n.value,
+                    n.unit,
+                    n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+                    n.name
+                  ).value,
+                  unit: "g",
+                };
+              })
               .filter((n) => n.value > 0.01),
           })
         );
@@ -602,16 +668,34 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                     "cals",
                   ].includes(n.unit?.toLowerCase().trim())
                 )
-                .map((n) => ({
-                  name: n.name,
-                  value: convertToGrams(
-                    n.value,
-                    n.unit,
-                    n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
-                    n.name
-                  ).value,
-                  unit: "g",
-                }))
+                .map((n) => {
+                  if (
+                    n.name.toLowerCase().includes("energy") ||
+                    n.name.toLowerCase().includes("calorie") ||
+                    n.unit.toLowerCase() === "kcal" ||
+                    n.unit.toLowerCase() === "cal" ||
+                    n.unit.toLowerCase() === "cals"
+                  ) {
+                    return {
+                      ...n,
+                      unit: "kcal",
+                    };
+                  }
+
+                  return {
+                    name: n.name,
+                    value: convertToGrams(
+                      n.value,
+                      n.unit,
+                      n.name
+                        .toLowerCase()
+                        .replace(/_/g, " ")
+                        .replace(/-/g, " "),
+                      n.name
+                    ).value,
+                    unit: "g",
+                  };
+                })
                 .filter((n) => n.value > 0.01),
             })
           );
@@ -699,16 +783,34 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                     "cals",
                   ].includes(n.unit?.toLowerCase().trim())
                 )
-                .map((n) => ({
-                  name: n.name,
-                  value: convertToGrams(
-                    n.value,
-                    n.unit,
-                    n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
-                    n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " ")
-                  ).value,
-                  unit: "g",
-                }))
+                .map((n) => {
+                  if (
+                    n.name.toLowerCase().includes("energy") ||
+                    n.name.toLowerCase().includes("calorie") ||
+                    n.unit.toLowerCase() === "kcal" ||
+                    n.unit.toLowerCase() === "cal" ||
+                    n.unit.toLowerCase() === "cals"
+                  ) {
+                    return {
+                      ...n,
+                      unit: "kcal",
+                    };
+                  }
+
+                  return {
+                    name: n.name,
+                    value: convertToGrams(
+                      n.value,
+                      n.unit,
+                      n.name
+                        .toLowerCase()
+                        .replace(/_/g, " ")
+                        .replace(/-/g, " "),
+                      n.name
+                    ).value,
+                    unit: "g",
+                  };
+                })
                 .filter((n) => n.value > 0.01),
             })
           );
@@ -753,7 +855,33 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         ingredients: geminiRes.ingredients,
         triggeredAllergens: geminiRes.triggeredAllergens,
         nutritionData: geminiRes.groupedNutrition.map((g) =>
-          g.items.filter((n) => n.value > 0.01)
+          g.items
+            .map((n) => {
+              if (
+                n.name.toLowerCase().includes("energy") ||
+                n.name.toLowerCase().includes("calorie") ||
+                n.unit.toLowerCase() === "kcal" ||
+                n.unit.toLowerCase() === "cal" ||
+                n.unit.toLowerCase() === "cals"
+              ) {
+                return {
+                  ...n,
+                  unit: "kcal",
+                };
+              }
+
+              return {
+                name: n.name,
+                value: convertToGrams(
+                  n.value,
+                  n.unit,
+                  n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+                  n.name
+                ).value,
+                unit: "g",
+              };
+            })
+            .filter((n) => n.value > 0.01)
         ),
         source: "gemini",
       },
