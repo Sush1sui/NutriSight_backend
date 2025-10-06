@@ -513,6 +513,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           })
         );
 
+        console.log(convertedGroupedNutrition);
+
         res.status(200).json({
           message: "Food data retrieved successfully",
           data: {
