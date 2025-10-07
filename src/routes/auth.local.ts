@@ -8,6 +8,7 @@ import {
   sendOtp,
   onboardingSubmit,
   agreement,
+  changePassword,
 } from "../controllers/authLocalController";
 
 const router = express.Router();
@@ -35,5 +36,8 @@ router.post("/logout", logout);
 
 // Check session status
 router.get("/session", checkSession);
+
+// Change password
+router.post("/change-password", changePassword)
 
 export default router;

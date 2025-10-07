@@ -417,3 +417,65 @@ export const checkSession = (req: Request, res: Response) => {
     res.status(401).json({ message: "Not authenticated" });
   }
 };
+
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+
+    const { oldPassword, newPassword, dontHavePassword} = req.body;
+
+    if(dontHavePassword !== "ok" && !oldPassword ){
+      res.status(400).json({ error: "Old password is required" });
+      return
+    }
+
+    const user = await UserAccount.findOne({ email: (req.user as { email: string }).email });
+    if(!user) {
+      res.status(400).json({error: "User not authenticated"})
+      return
+    }
+
+    if(dontHavePassword !== "ok" && user?.password){
+      res.status(400).json({error: "User does not have a password set"})
+      return
+    }
+
+    if(dontHavePassword !== "ok"){
+      const isMatch = await bcrypt.compare(oldPassword, user.password || "");
+      if (!isMatch) {
+        res.status(400).json({ error: "Old password is incorrect" });
+        return;
+      }
+
+      if (oldPassword === newPassword) {
+        res
+          .status(400)
+          .json({ error: "New password must be different from old password" });
+        return;
+      }
+
+      // encrypt new password
+      const newPw = await bcrypt.hash(newPassword, 10);
+      user.password = newPw;
+      await user.save();
+      res.status(200).json({ message: "Password changed successfully" });
+      return;
+    }
+
+    // encrypt new password
+    const newPw = await bcrypt.hash(newPassword, 10);
+    user.password = newPw;
+    await user.save();
+    res.status(200).json({ message: "Password set successfully" });
+    return;
+  } catch (error) {
+    console.error("Failed to change password:", error)
+    res.status(500).json({
+      message: "Failed to change password",
+      error
+    })
+  }
+}
