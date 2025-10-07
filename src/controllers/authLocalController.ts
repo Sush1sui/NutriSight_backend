@@ -190,6 +190,7 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     !activityLevel ||
     !loggedWeightPayload
   ) {
+    console.log("Missing fields in onboarding:", req.body);
     res.status(400).json({ message: "All fields are required" });
     return;
   }
