@@ -9,8 +9,6 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 export const verifyGoogleToken = async (req: Request, res: Response) => {
   const { idToken } = req.body;
 
-  console.log(idToken) 
-
   if (!idToken) {
     res.status(400).json({ message: "ID token not provided." });
     return;
@@ -33,7 +31,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
     const { sub: id, email, name, given_name, family_name, picture } = payload;
 
-    let user = await UserAccount.findOne({ gmailId: id });
+    let user = await UserAccount.findOne({ gmailId: id, email });
 
     if (user && !user.isVerified && user.email === email) {
       const existingUser = await UserAccount.findOne({ email });
