@@ -470,11 +470,37 @@ export const changePassword = async (req: Request, res: Response) => {
     user.password = newPw;
     await user.save();
     res.status(200).json({ message: "Password set successfully" });
-    return;
+    return
+
   } catch (error) {
     console.error("Failed to change password:", error)
     res.status(500).json({
       message: "Failed to change password",
+      error
+    })
+  }
+}
+
+export const userHavePassword = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+    const user = await UserAccount.findOne({ email: (req.user as { email: string }).email });
+    if(!user) {
+      res.status(400).json({error: "User not authenticated"})
+      return
+    }
+    if(user?.password){
+      res.status(200).json({havePassword: true})
+      return
+    }
+    res.status(200).json({havePassword: false})
+  } catch (error) {
+    console.error("Failed to check if user has password:", error)
+    res.status(500).json({
+      message: "Failed to check if user has password",
       error
     })
   }
