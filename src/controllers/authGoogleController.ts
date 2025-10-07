@@ -76,23 +76,10 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
         user = await existingUser.save();
 
-        req.logIn(existingUser, (err) => {
-          if (err) {
-            console.error("Session login error after token verification:", err);
-            res.status(500).json({ message: "Could not create session." });
-            return;
-          }
-
-          const userObj = existingUser.toObject
-            ? existingUser.toObject()
-            : existingUser;
-          delete userObj.password; // Remove password from response
-
-          // On successful login, send back user data
-          res.status(200).json({
-            user: userObj,
-          });
-          return;
+        res.status(200).json({
+          message: "User authenticated successfully",
+          email: user.email,
+          success: true,
         });
       } else {
         console.error("User not found for login.");
