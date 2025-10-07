@@ -9,6 +9,7 @@ import {
   onboardingSubmit,
   agreement,
   changePassword,
+  userHavePassword,
 } from "../controllers/authLocalController";
 
 const router = express.Router();
@@ -39,5 +40,8 @@ router.get("/session", checkSession);
 
 // Change password
 router.post("/change-password", changePassword)
+
+// Verify if password exists
+router.get("/has-password", userHavePassword)
 
 export default router;
