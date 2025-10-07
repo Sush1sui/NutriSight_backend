@@ -31,7 +31,17 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
     const { sub: id, email, name, given_name, family_name, picture } = payload;
 
-    let user = await UserAccount.findOne({ gmailId: id, email });
+    // Check for existing user by gmailId OR email
+    let user = await UserAccount.findOne({
+      $or: [{ gmailId: id }, { email }]
+    });
+
+    if(user) {
+       // User exists - update Google info if missing
+      if (!user.gmailId) {
+        user.gmailId = id;
+      }
+    }
 
     if (user && !user.isVerified && user.email === email) {
       const existingUser = await UserAccount.findOne({ email });
