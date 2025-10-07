@@ -91,6 +91,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
           email: user.email,
           success: true,
         });
+        return
       } else {
         console.error("User not found for login.");
         res.status(401).json({ message: "User not found for login." });
