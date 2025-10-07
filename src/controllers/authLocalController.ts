@@ -181,7 +181,7 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     !gender ||
     !birthDate ||
     !heightFeet ||
-    !heightInches ||
+    !heightInches && Number(heightInches)!== 0 ||
     !weight ||
     !weightGoal ||
     targetWeight === null ||
