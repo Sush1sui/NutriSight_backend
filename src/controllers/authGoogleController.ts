@@ -37,7 +37,6 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
       const existingUser = await UserAccount.findOne({ email });
       if (existingUser) {
         existingUser.gmailId = id;
-        existingUser.isVerified = true; // Google verifies the email
         existingUser.name = name || undefined;
         existingUser.firstName = given_name || undefined;
         existingUser.lastName = family_name || undefined;
