@@ -31,17 +31,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
     const { sub: id, email, name, given_name, family_name, picture } = payload;
 
-    // Check for existing user by gmailId OR email
-    let user = await UserAccount.findOne({
-      $or: [{ gmailId: id }, { email }]
-    });
-
-    if(user) {
-       // User exists - update Google info if missing
-      if (!user.gmailId) {
-        user.gmailId = id;
-      }
-    }
+    let user = await UserAccount.findOne({ gmailId: id });
 
     if (user && !user.isVerified && user.email === email) {
       const existingUser = await UserAccount.findOne({ email });
@@ -86,12 +76,24 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
         user = await existingUser.save();
 
-        res.status(200).json({
-          message: "User authenticated successfully",
-          email: user.email,
-          success: true,
+        req.logIn(existingUser, (err) => {
+          if (err) {
+            console.error("Session login error after token verification:", err);
+            res.status(500).json({ message: "Could not create session." });
+            return;
+          }
+
+          const userObj = existingUser.toObject
+            ? existingUser.toObject()
+            : existingUser;
+          delete userObj.password; // Remove password from response
+
+          // On successful login, send back user data
+          res.status(200).json({
+            user: userObj,
+          });
+          return;
         });
-        return
       } else {
         console.error("User not found for login.");
         res.status(401).json({ message: "User not found for login." });
