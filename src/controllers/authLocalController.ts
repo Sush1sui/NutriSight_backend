@@ -425,7 +425,7 @@ export const changePassword = async (req: Request, res: Response) => {
       return;
     }
 
-    const { oldPassword, newPassword, dontHavePassword} = req.body;
+    const { currentPassword, newPassword, dontHavePassword} = req.body;
 
     if(dontHavePassword !== "ok" && !oldPassword ){
       res.status(400).json({ error: "Old password is required" });
@@ -444,13 +444,13 @@ export const changePassword = async (req: Request, res: Response) => {
     }
 
     if(dontHavePassword !== "ok"){
-      const isMatch = await bcrypt.compare(oldPassword, user.password || "");
+      const isMatch = await bcrypt.compare(currentPassword, user.password || "");
       if (!isMatch) {
         res.status(400).json({ error: "Old password is incorrect" });
         return;
       }
 
-      if (oldPassword === newPassword) {
+      if (currentPassword === newPassword) {
         res
           .status(400)
           .json({ error: "New password must be different from old password" });
