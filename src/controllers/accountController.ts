@@ -1,15 +1,11 @@
 import { Request, Response } from "express";
-import UserAccount, {
-  IUserAccount,
-  ScanResultType,
-  DietHistory,
-} from "../models/UserAccount";
+import UserAccount, { IUserAccount } from "../models/UserAccount";
 import ScanResult from "../models/ScanResult";
 import MealEntry from "../models/MealEntry";
 import LoggedWeight from "../models/LoggedWeight";
 import { v2 as cloudinary } from "cloudinary";
 import { getDateString } from "../utils/getDateString";
-import mongoose from "mongoose";
+import { buildDietHistoryResponse } from "../utils/populateUserData";
 
 const ALLOWED_FIELDS = [
   "gender",
@@ -209,49 +205,6 @@ export const updateDietHistory = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
-// Helper function to build diet history response in old format
-async function buildDietHistoryResponse(
-  userId: mongoose.Types.ObjectId | string
-): Promise<DietHistory[]> {
-  const mealEntries = await MealEntry.find({ userId })
-    .populate("scanResultId")
-    .sort({ date: -1 });
-
-  // Group by date
-  const groupedByDate: Record<string, DietHistory> = {};
-
-  for (const entry of mealEntries) {
-    const dateStr = entry.date;
-    if (!groupedByDate[dateStr]) {
-      groupedByDate[dateStr] = {
-        date: dateStr,
-        breakfast: [],
-        lunch: [],
-        dinner: [],
-        otherMealTime: [],
-      };
-    }
-
-    const scanResult = entry.scanResultId as any;
-    const mealData: ScanResultType = {
-      id: (entry._id as mongoose.Types.ObjectId).toString(),
-      name: scanResult.name,
-      foodName: scanResult.foodName,
-      brand: scanResult.brand,
-      servingSize: scanResult.servingSize,
-      ingredients: scanResult.ingredients,
-      triggeredAllergens: entry.triggeredAllergens,
-      nutritionData: scanResult.nutritionData,
-      source: scanResult.source,
-      quantity: entry.quantity,
-    };
-
-    groupedByDate[dateStr][entry.mealType].push(mealData);
-  }
-
-  return Object.values(groupedByDate);
-}
 
 export const getDietHistoryByDate = async (req: Request, res: Response) => {
   try {

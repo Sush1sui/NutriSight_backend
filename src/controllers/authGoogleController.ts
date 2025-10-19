@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import UserAccount from "../models/UserAccount";
 import { v2 as cloudinary } from "cloudinary";
+import { populateUserWithDynamicData } from "../utils/populateUserData";
 
 // This is the CLIENT_ID of the web application from Google Cloud Console
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -75,9 +76,15 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
         user = await existingUser.save();
 
+        const userObj = user.toObject ? user.toObject() : user;
+        delete (userObj as any).password;
+
+        // Populate dietHistory and loggedWeights for frontend
+        const populatedUser = await populateUserWithDynamicData(userObj);
+
         res.status(200).json({
           message: "User authenticated successfully",
-          email: user.email,
+          user: populatedUser,
           success: true,
         });
       } else {
@@ -120,16 +127,22 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
       await user.save();
 
+      const userObj = user.toObject ? user.toObject() : user;
+      delete (userObj as any).password;
+
+      // Populate dietHistory and loggedWeights for frontend
+      const populatedUser = await populateUserWithDynamicData(userObj);
+
       res.status(200).json({
         message: "User authenticated successfully",
-        email: user.email,
+        user: populatedUser,
         success: true,
       });
       return;
     }
 
     // Manually log in the user to establish a session cookie
-    req.logIn(user, (err) => {
+    req.logIn(user, async (err) => {
       if (err) {
         console.error("Session login error after token verification:", err);
         res.status(500).json({ message: "Could not create session." });
@@ -139,9 +152,12 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
       const userObj = user.toObject ? user.toObject() : user;
       delete userObj.password; // Remove password from response
 
+      // Populate dietHistory and loggedWeights for frontend
+      const populatedUser = await populateUserWithDynamicData(userObj);
+
       // On successful login, send back user data
       res.status(200).json({
-        user: userObj,
+        user: populatedUser,
       });
       return;
     });

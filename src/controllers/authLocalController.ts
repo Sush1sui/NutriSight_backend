@@ -5,6 +5,7 @@ import LoggedWeight from "../models/LoggedWeight";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { getDateString } from "../utils/getDateString";
+import { populateUserWithDynamicData } from "../utils/populateUserData";
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_TIME = 15 * 60 * 1000; // 15 minutes
@@ -323,7 +324,7 @@ export const agreement = async (req: Request, res: Response) => {
     return;
   }
 
-  req.logIn(user, (err) => {
+  req.logIn(user, async (err) => {
     if (err) {
       return res.status(500).json({ message: "Session login failed" });
     }
@@ -331,9 +332,12 @@ export const agreement = async (req: Request, res: Response) => {
     const userObj = user.toObject ? user.toObject() : user;
     delete userObj.password; // Remove password from response
 
+    // Populate dietHistory and loggedWeights for frontend
+    const populatedUser = await populateUserWithDynamicData(userObj);
+
     return res.json({
       message: "Agreement completed successfully",
-      user: userObj,
+      user: populatedUser,
     });
   });
 };
@@ -390,13 +394,17 @@ export const login = async (req: Request, res: Response) => {
   const userObj = user.toObject ? user.toObject() : user;
   delete userObj.password; // Remove password from response
 
-  req.logIn(user, (err) => {
+  req.logIn(user, async (err) => {
     if (err) {
       return res.status(500).json({ message: "Session login failed" });
     }
+
+    // Populate dietHistory and loggedWeights for frontend
+    const populatedUser = await populateUserWithDynamicData(userObj);
+
     return res.json({
       message: "Login successful",
-      user: userObj,
+      user: populatedUser,
     });
   });
 };
@@ -417,15 +425,18 @@ export const logout = (req: Request, res: Response) => {
   });
 };
 
-export const checkSession = (req: Request, res: Response) => {
+export const checkSession = async (req: Request, res: Response) => {
   if (req.isAuthenticated() && req.user) {
     const sessionUser = req.user as any; // User object from Passport
 
     const userObj = sessionUser.toObject ? sessionUser.toObject() : sessionUser;
     delete userObj.password; // Remove password from response
 
+    // Populate dietHistory and loggedWeights for frontend
+    const populatedUser = await populateUserWithDynamicData(userObj);
+
     res.status(200).json({
-      user: userObj,
+      user: populatedUser,
     });
   } else {
     // No active session
@@ -440,26 +451,31 @@ export const changePassword = async (req: Request, res: Response) => {
       return;
     }
 
-    const { currentPassword, newPassword, dontHavePassword} = req.body;
+    const { currentPassword, newPassword, dontHavePassword } = req.body;
 
-    if(dontHavePassword !== "ok" && !currentPassword ){
+    if (dontHavePassword !== "ok" && !currentPassword) {
       res.status(400).json({ error: "Old password is required" });
-      return
+      return;
     }
 
-    const user = await UserAccount.findOne({ email: (req.user as { email: string }).email });
-    if(!user) {
-      res.status(400).json({error: "User not authenticated"})
-      return
+    const user = await UserAccount.findOne({
+      email: (req.user as { email: string }).email,
+    });
+    if (!user) {
+      res.status(400).json({ error: "User not authenticated" });
+      return;
     }
 
-    if(dontHavePassword !== "ok" && user?.password){
-      res.status(400).json({error: "User does not have a password set"})
-      return
+    if (dontHavePassword !== "ok" && user?.password) {
+      res.status(400).json({ error: "User does not have a password set" });
+      return;
     }
 
-    if(dontHavePassword !== "ok"){
-      const isMatch = await bcrypt.compare(currentPassword, user.password || "");
+    if (dontHavePassword !== "ok") {
+      const isMatch = await bcrypt.compare(
+        currentPassword,
+        user.password || ""
+      );
       if (!isMatch) {
         res.status(400).json({ error: "Old password is incorrect" });
         return;
@@ -485,16 +501,15 @@ export const changePassword = async (req: Request, res: Response) => {
     user.password = newPw;
     await user.save();
     res.status(200).json({ message: "Password set successfully" });
-    return
-
+    return;
   } catch (error) {
-    console.error("Failed to change password:", error)
+    console.error("Failed to change password:", error);
     res.status(500).json({
       message: "Failed to change password",
-      error
-    })
+      error,
+    });
   }
-}
+};
 
 export const userHavePassword = async (req: Request, res: Response) => {
   try {
@@ -502,21 +517,23 @@ export const userHavePassword = async (req: Request, res: Response) => {
       res.status(401).json({ error: "User not authenticated" });
       return;
     }
-    const user = await UserAccount.findOne({ email: (req.user as { email: string }).email });
-    if(!user) {
-      res.status(400).json({error: "User not authenticated"})
-      return
+    const user = await UserAccount.findOne({
+      email: (req.user as { email: string }).email,
+    });
+    if (!user) {
+      res.status(400).json({ error: "User not authenticated" });
+      return;
     }
-    if(user?.password){
-      res.status(200).json({havePassword: true})
-      return
+    if (user?.password) {
+      res.status(200).json({ havePassword: true });
+      return;
     }
-    res.status(200).json({havePassword: false})
+    res.status(200).json({ havePassword: false });
   } catch (error) {
-    console.error("Failed to check if user has password:", error)
+    console.error("Failed to check if user has password:", error);
     res.status(500).json({
       message: "Failed to check if user has password",
-      error
-    })
+      error,
+    });
   }
-}
+};
