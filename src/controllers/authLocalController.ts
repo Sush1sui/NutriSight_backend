@@ -466,7 +466,7 @@ export const changePassword = async (req: Request, res: Response) => {
       return;
     }
 
-    if (dontHavePassword !== "ok" && user?.password) {
+    if (dontHavePassword !== "ok" && !user?.password) {
       res.status(400).json({ error: "User does not have a password set" });
       return;
     }
