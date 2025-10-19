@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import UserAccount from "../models/UserAccount";
+import LoggedWeight from "../models/LoggedWeight";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { getDateString } from "../utils/getDateString";
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_TIME = 15 * 60 * 1000; // 15 minutes
@@ -181,7 +183,7 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     !gender ||
     !birthDate ||
     !heightFeet ||
-    !heightInches && Number(heightInches)!== 0 ||
+    (!heightInches && Number(heightInches) !== 0) ||
     !weight ||
     !weightGoal ||
     targetWeight === null ||
@@ -276,7 +278,20 @@ export const onboardingSubmit = async (req: Request, res: Response) => {
     carbs: Math.round(targetCarbs),
     fat: Math.round(targetFat),
   };
-  user.loggedWeights = loggedWeightPayload;
+
+  // Save logged weight to LoggedWeight collection
+  if (loggedWeightPayload && Array.isArray(loggedWeightPayload)) {
+    for (const weightEntry of loggedWeightPayload) {
+      if (weightEntry.value && weightEntry.date) {
+        const dateStr = getDateString(weightEntry.date);
+        await LoggedWeight.findOneAndUpdate(
+          { userId: user._id, date: dateStr },
+          { value: weightEntry.value, date: dateStr },
+          { upsert: true, new: true }
+        );
+      }
+    }
+  }
 
   user.isVerified = true; // Mark user as verified after onboarding
 

@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+// Types for backward compatibility with frontend
 export type ScanResultType = {
   id?: any;
   name?: string;
@@ -16,21 +17,16 @@ export type ScanResultType = {
       unit: string;
     }[];
   }[];
-  source?: string; // "usda" | "nutritionix" | "open food facts" | "gemini" | "mynetdiary"
-  quantity?: number; // quantity scanned
+  source?: string;
+  quantity?: number;
 };
 
 export interface DietHistory {
-  date: string; // Store date as string in "YYYY-MM-DD" format
+  date: string;
   breakfast: ScanResultType[];
   lunch: ScanResultType[];
   dinner: ScanResultType[];
   otherMealTime: ScanResultType[];
-}
-
-export interface LoggedWeight {
-  value: number;
-  date: string; // Optional date field in "YYYY-MM-DD" format
 }
 
 export type DailyRecommendationType = {
@@ -43,18 +39,17 @@ export type DailyRecommendationType = {
 export interface IUserAccount extends Document {
   gmailId?: string;
   profileLink?: string;
-  profilePublicId?: string; // Optional field for public profile ID
+  profilePublicId?: string;
   gender?: string;
   birthDate?: Date;
-  heightFeet?: number; // in feet
-  heightInches?: number; // in inches
-  weight?: number; // in kg
-  weightGoal?: string; // e.g., "lose", "maintain", "gain"
-  targetWeight?: number; // in kg
-  bmi?: number; // Body Mass Index
-  allergens?: string[]; // Array of allergens
-  medicalConditions?: string[]; // Array of medical conditions
-  dietHistory?: DietHistory[]; // Array of diet history records
+  heightFeet?: number;
+  heightInches?: number;
+  weight?: number;
+  weightGoal?: string;
+  targetWeight?: number;
+  bmi?: number;
+  allergens?: string[];
+  medicalConditions?: string[];
   name?: string;
   firstName?: string;
   lastName?: string;
@@ -65,7 +60,6 @@ export interface IUserAccount extends Document {
   isVerified: boolean;
   loginAttempts: number;
   lockUntil: Date | null;
-  loggedWeights: LoggedWeight[];
   dietType?: string;
   dailyRecommendation?: DailyRecommendationType;
   activityLevel?: string;
@@ -74,13 +68,13 @@ export interface IUserAccount extends Document {
 const UserAccountSchema = new Schema<IUserAccount>({
   gmailId: { type: String, unique: true, sparse: true },
   profileLink: { type: String, sparse: true },
-  profilePublicId: { type: String, sparse: true }, // Optional field for public profile ID
+  profilePublicId: { type: String, sparse: true },
   birthDate: { type: Date, sparse: true },
-  heightFeet: { type: Number, sparse: true }, // in feet
-  heightInches: { type: Number, sparse: true }, // in inches
-  weight: { type: Number, sparse: true }, // in kg
-  targetWeight: { type: Number, sparse: true }, // in kg
-  bmi: { type: Number, sparse: true }, // Body Mass Index
+  heightFeet: { type: Number, sparse: true },
+  heightInches: { type: Number, sparse: true },
+  weight: { type: Number, sparse: true },
+  targetWeight: { type: Number, sparse: true },
+  bmi: { type: Number, sparse: true },
   allergens: { type: [String], sparse: true },
   medicalConditions: { type: [String], sparse: true },
   gender: { type: String, sparse: true },
@@ -94,27 +88,6 @@ const UserAccountSchema = new Schema<IUserAccount>({
   isVerified: { type: Boolean, default: false },
   loginAttempts: { type: Number, default: 0 },
   lockUntil: { type: Date, default: null },
-  dietHistory: {
-    type: [
-      {
-        date: { type: String, required: true },
-        breakfast: { type: [Schema.Types.Mixed], default: [] },
-        lunch: { type: [Schema.Types.Mixed], default: [] },
-        dinner: { type: [Schema.Types.Mixed], default: [] },
-        otherMealTime: { type: [Schema.Types.Mixed], default: [] },
-      },
-    ],
-    default: [],
-  },
-  loggedWeights: {
-    type: [
-      {
-        value: { type: Number, required: true },
-        date: { type: String, required: true }, // Store date as string in "YYYY-MM-DD" format
-      },
-    ],
-    default: [],
-  },
   dietType: { type: String, sparse: true },
   dailyRecommendation: {
     type: {

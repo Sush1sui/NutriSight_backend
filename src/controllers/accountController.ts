@@ -1,7 +1,15 @@
 import { Request, Response } from "express";
-import UserAccount, { IUserAccount } from "../models/UserAccount";
+import UserAccount, {
+  IUserAccount,
+  ScanResultType,
+  DietHistory,
+} from "../models/UserAccount";
+import ScanResult from "../models/ScanResult";
+import MealEntry from "../models/MealEntry";
+import LoggedWeight from "../models/LoggedWeight";
 import { v2 as cloudinary } from "cloudinary";
 import { getDateString } from "../utils/getDateString";
+import mongoose from "mongoose";
 
 const ALLOWED_FIELDS = [
   "gender",
@@ -12,12 +20,15 @@ const ALLOWED_FIELDS = [
   "bmi",
   "allergens",
   "medicalConditions",
-  "dietHistory",
   "name",
   "firstName",
   "lastName",
-  "loggedWeights",
   "dailyRecommendation",
+  "dietType",
+  "activityLevel",
+  "weightGoal",
+  "heightFeet",
+  "heightInches",
 ];
 
 export const changeProfilePicture = async (req: Request, res: Response) => {
@@ -145,49 +156,102 @@ export const updateDietHistory = async (req: Request, res: Response) => {
 
     const incomingDateStr = getDateString(dietHistoryPayload.date);
 
-    // find existing entry for the same date (compare normalized date string)
-    const existingIndex = (user.dietHistory || []).findIndex((entry) => {
-      return getDateString(entry.date) === incomingDateStr;
-    });
+    // Process each meal type and save to normalized tables
+    const mealTypes: Array<"breakfast" | "lunch" | "dinner" | "otherMealTime"> =
+      ["breakfast", "lunch", "dinner", "otherMealTime"];
 
-    if (user.dietHistory && existingIndex >= 0) {
-      // append incoming ScanResultType items to existing meal arrays
-      const existing = user.dietHistory[existingIndex];
-      existing.breakfast = [
-        ...(existing.breakfast || []),
-        ...incomingMeals.breakfast,
-      ];
-      existing.lunch = [...(existing.lunch || []), ...incomingMeals.lunch];
-      existing.dinner = [...(existing.dinner || []), ...incomingMeals.dinner];
-      existing.otherMealTime = [
-        ...(existing.otherMealTime || []),
-        ...incomingMeals.otherMealTime,
-      ];
-      // replace entry
-      user.dietHistory[existingIndex] = existing;
-    } else {
-      // push a new date entry with the incoming meal arrays
-      user.dietHistory = [
-        ...(user.dietHistory || []),
-        {
-          date: dietHistoryPayload.date,
-          breakfast: incomingMeals.breakfast,
-          lunch: incomingMeals.lunch,
-          dinner: incomingMeals.dinner,
-          otherMealTime: incomingMeals.otherMealTime,
-        },
-      ];
+    for (const mealType of mealTypes) {
+      const meals = incomingMeals[mealType];
+
+      for (const meal of meals) {
+        // Find or create ScanResult
+        let scanResult = await ScanResult.findOne({
+          $or: [
+            { sourceId: meal.id, source: meal.source },
+            { name: meal.name || meal.foodName, brand: meal.brand },
+          ],
+        });
+
+        if (!scanResult) {
+          scanResult = await ScanResult.create({
+            name: meal.name,
+            foodName: meal.foodName,
+            brand: meal.brand,
+            servingSize: meal.servingSize,
+            ingredients: meal.ingredients || [],
+            nutritionData: meal.nutritionData || [],
+            source: meal.source,
+            sourceId: meal.id,
+          });
+        }
+
+        // Create MealEntry
+        await MealEntry.create({
+          userId: uid,
+          scanResultId: scanResult._id,
+          date: incomingDateStr,
+          mealType,
+          quantity: meal.quantity || 1,
+          triggeredAllergens: meal.triggeredAllergens || [],
+        });
+      }
     }
 
-    await user.save();
-    res
-      .status(200)
-      .json({ message: "Diet history updated", dietHistory: user.dietHistory });
+    // Fetch the reconstructed diet history for response (maintains API compatibility)
+    const dietHistory = await buildDietHistoryResponse(uid);
+
+    res.status(200).json({
+      message: "Diet history updated",
+      dietHistory,
+    });
   } catch (error) {
     console.error("Error updating diet history:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// Helper function to build diet history response in old format
+async function buildDietHistoryResponse(
+  userId: mongoose.Types.ObjectId | string
+): Promise<DietHistory[]> {
+  const mealEntries = await MealEntry.find({ userId })
+    .populate("scanResultId")
+    .sort({ date: -1 });
+
+  // Group by date
+  const groupedByDate: Record<string, DietHistory> = {};
+
+  for (const entry of mealEntries) {
+    const dateStr = entry.date;
+    if (!groupedByDate[dateStr]) {
+      groupedByDate[dateStr] = {
+        date: dateStr,
+        breakfast: [],
+        lunch: [],
+        dinner: [],
+        otherMealTime: [],
+      };
+    }
+
+    const scanResult = entry.scanResultId as any;
+    const mealData: ScanResultType = {
+      id: (entry._id as mongoose.Types.ObjectId).toString(),
+      name: scanResult.name,
+      foodName: scanResult.foodName,
+      brand: scanResult.brand,
+      servingSize: scanResult.servingSize,
+      ingredients: scanResult.ingredients,
+      triggeredAllergens: entry.triggeredAllergens,
+      nutritionData: scanResult.nutritionData,
+      source: scanResult.source,
+      quantity: entry.quantity,
+    };
+
+    groupedByDate[dateStr][entry.mealType].push(mealData);
+  }
+
+  return Object.values(groupedByDate);
+}
 
 export const getDietHistoryByDate = async (req: Request, res: Response) => {
   try {
@@ -210,9 +274,11 @@ export const getDietHistoryByDate = async (req: Request, res: Response) => {
     }
 
     const targetDateStr = getDateString(date);
-    const entry = (user.dietHistory || []).find(
-      (record) => getDateString(record.date) === targetDateStr
-    );
+
+    // Fetch from normalized tables
+    const dietHistory = await buildDietHistoryResponse(uid);
+    const entry = dietHistory.find((record) => record.date === targetDateStr);
+
     if (!entry) {
       res
         .status(200)
@@ -245,54 +311,131 @@ export const deleteDietHistoryByDate = async (req: Request, res: Response) => {
       res.status(404).json({ error: "User not found" });
       return;
     }
-    const targetDateStr = getDateString(date);
-    const entryIndex = (user.dietHistory || []).findIndex(
-      (record) => getDateString(record.date) === targetDateStr
-    );
-    if (entryIndex < 0) {
-      res
-        .status(200)
-        .json({ message: "No entry for this date", dietHistory: null });
-      return;
-    }
-    const entry = user.dietHistory![entryIndex];
-    if (
-      !entry[mealTime as keyof typeof entry] ||
-      !Array.isArray(entry[mealTime as keyof typeof entry])
-    ) {
+
+    // Accept "other" alias from frontend and normalize to "otherMealTime"
+    const normalizedMealTime =
+      mealTime === "other" ? "otherMealTime" : String(mealTime);
+
+    const ALLOWED_MEALS = new Set([
+      "breakfast",
+      "lunch",
+      "dinner",
+      "otherMealTime",
+    ]);
+    if (!ALLOWED_MEALS.has(normalizedMealTime)) {
       res.status(400).json({ error: "Invalid mealTime parameter" });
       return;
     }
-    // filter out the item with the given id
-    if (mealTime === "breakfast") {
-      entry.breakfast = entry.breakfast.filter((item) => item.id !== id);
-    } else if (mealTime === "lunch") {
-      entry.lunch = entry.lunch.filter((item) => item.id !== id);
-    } else if (mealTime === "dinner") {
-      entry.dinner = entry.dinner.filter((item) => item.id !== id);
-    } else if (mealTime === "otherMealTime") {
-      entry.otherMealTime = entry.otherMealTime.filter(
-        (item) => item.id !== id
-      );
+
+    // Delete from MealEntry (id is the MealEntry._id)
+    const deleteResult = await MealEntry.findByIdAndDelete(id);
+
+    if (!deleteResult) {
+      res.status(404).json({ error: "Meal entry not found" });
+      return;
     }
 
-    // if all meal arrays are empty, remove the entire date entry
-    if (
-      entry.breakfast.length === 0 &&
-      entry.lunch.length === 0 &&
-      entry.dinner.length === 0 &&
-      entry.otherMealTime.length === 0
-    ) {
-      user.dietHistory!.splice(entryIndex, 1);
-    }
+    // Fetch updated user data with all diet history
+    const updatedUser = await UserAccount.findById(uid).lean();
 
-    await user.save();
     res.status(200).json({
       message: "Diet history entry deleted",
-      user, // so that frontend can update local state
+      user: updatedUser,
     });
   } catch (error) {
     console.error("Error deleting diet history:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Logged Weights Controllers
+export const addLoggedWeight = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+
+    const { value, date } = req.body;
+    if (!value || !date) {
+      res.status(400).json({ error: "Value and date are required" });
+      return;
+    }
+
+    const uid = (req.user as { _id: string })._id;
+    const dateStr = getDateString(date);
+
+    // Upsert: update if exists for this date, create if not
+    await LoggedWeight.findOneAndUpdate(
+      { userId: uid, date: dateStr },
+      { value, date: dateStr },
+      { upsert: true, new: true }
+    );
+
+    // Get all logged weights for response
+    const allWeights = await LoggedWeight.find({ userId: uid }).sort({
+      date: -1,
+    });
+
+    res.status(200).json({
+      message: "Weight logged successfully",
+      loggedWeights: allWeights.map((w) => ({ value: w.value, date: w.date })),
+    });
+  } catch (error) {
+    console.error("Error logging weight:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getLoggedWeights = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+
+    const uid = (req.user as { _id: string })._id;
+    const weights = await LoggedWeight.find({ userId: uid }).sort({ date: -1 });
+
+    res.status(200).json({
+      message: "Logged weights retrieved",
+      loggedWeights: weights.map((w) => ({ value: w.value, date: w.date })),
+    });
+  } catch (error) {
+    console.error("Error getting logged weights:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const deleteLoggedWeight = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+
+    const { date } = req.body;
+    if (!date) {
+      res.status(400).json({ error: "Date is required" });
+      return;
+    }
+
+    const uid = (req.user as { _id: string })._id;
+    const dateStr = getDateString(date);
+
+    await LoggedWeight.findOneAndDelete({ userId: uid, date: dateStr });
+
+    // Get remaining weights
+    const allWeights = await LoggedWeight.find({ userId: uid }).sort({
+      date: -1,
+    });
+
+    res.status(200).json({
+      message: "Weight deleted successfully",
+      loggedWeights: allWeights.map((w) => ({ value: w.value, date: w.date })),
+    });
+  } catch (error) {
+    console.error("Error deleting logged weight:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
