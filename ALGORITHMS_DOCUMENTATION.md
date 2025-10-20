@@ -8,7 +8,11 @@ This document describes all algorithms and computational concepts used in the Nu
 
 **Location:** `src/utils/model_inference.ts`
 
+**Algorithm Name:** Softmax Classification with Top-K Selection
+
 ### **Concept: Convolutional Neural Network (CNN) Inference**
+
+**Description:** A deep learning pipeline that transforms raw food images into probability distributions over 101 Filipino food classes. The algorithm preprocesses images using ImageNet normalization standards, performs forward propagation through an ONNX neural network model, applies softmax normalization to convert logits into probabilities, and returns the top-K most confident predictions sorted by likelihood.
 
 - **Purpose:** Classify food images into 101 Filipino food categories
 - **Model:** Custom-trained ONNX model (256x256 input size)
@@ -66,7 +70,11 @@ Output: [{label: "adobo", prob: 0.85}, ...]
 
 **Location:** `src/utils/ingredientsNutritionsPredict.ts`
 
+**Algorithm Name:** LLM-Based Pattern Matching with Semantic Validation
+
 ### **Concept: AI-Powered String Matching with Context**
+
+**Description:** An intelligent allergen identification system that leverages Gemini AI's natural language understanding to cross-reference food ingredients against user-specific allergen profiles. The algorithm constructs context-rich prompts containing ingredient lists and allergen data, processes the response through regex-based JSON extraction, validates matches to ensure ingredient-allergen pairs are semantically accurate, and filters out false positives by enforcing strict matching rules (single ingredient names only, no compound phrases).
 
 - **Purpose:** Identify allergens in food ingredients using Gemini AI
 - **Method:** Natural Language Processing with structured prompts
@@ -116,7 +124,11 @@ Output: {
 
 **Location:** `src/utils/foodCameraUtils.ts`
 
+**Algorithm Name:** Priority-Based Consolidation with Map Deduplication
+
 ### **Concept: Data Deduplication and Standardization**
+
+**Description:** A multi-stage data cleaning pipeline that reconciles nutritional information from heterogeneous API sources (USDA, Nutritionix, Open Food Facts) into a unified, conflict-free format. The algorithm employs priority-based consolidation to resolve duplicate energy fields, uses case-insensitive Map-based deduplication to eliminate redundant nutrients while preserving the highest values, and extracts unit information with intelligent defaulting. This ensures consistent, reliable nutrition data regardless of source.
 
 - **Purpose:** Convert nutrition data from multiple APIs into uniform format
 - **Challenge:** Different APIs use different units, naming conventions, and duplicate fields
@@ -180,7 +192,11 @@ Output: {name: string, value: number, unit: string}
 
 **Location:** `src/utils/convertToGrams.ts`
 
+**Algorithm Name:** Density-Aware Unit Normalization
+
 ### **Concept: Multi-System Unit Conversion with Density Tables**
+
+**Description:** A comprehensive unit standardization system that converts diverse measurement units (metric, imperial, volume) into a uniform gram-based representation. The algorithm handles direct mass conversions through multiplication factors, performs context-aware volume-to-mass transformations using a 45-entry density lookup table for substances like milk, oil, and honey, and applies nutrient-specific formulas for International Units (IU) based on vitamin types. This enables accurate nutritional comparisons and calculations across different measurement systems.
 
 - **Purpose:** Standardize all nutrition values to grams (or kcal for energy)
 
@@ -233,7 +249,11 @@ Context-Dependent Conversion:
 
 **Location:** `src/controllers/cameraController.ts`
 
+**Algorithm Name:** Waterfall Pattern with Graceful Degradation
+
 ### **Concept: Multi-Source Data Retrieval with Graceful Degradation**
+
+**Description:** A fault-tolerant data acquisition strategy that attempts food data retrieval from multiple sources in priority order, gracefully degrading through progressively less accurate but more available alternatives. The algorithm follows the waterfall pattern: starting with authoritative sources (USDA), falling back to commercial databases (Nutritionix), then crowd-sourced data (Open Food Facts), and finally AI-generated estimates (Gemini). Each tier performs full data validation, normalization, and enrichment before either returning results or cascading to the next source, maximizing availability while optimizing for accuracy and cost.
 
 - **Purpose:** Maximize successful food data retrieval
 - **Pattern:** Waterfall/cascade pattern
@@ -289,7 +309,11 @@ Priority Order:
 
 **Location:** Model files (`src/models/`)
 
+**Algorithm Name:** B-Tree Compound Indexing with Leftmost Prefix Rule
+
 ### **Concept: Compound Indexes for Query Optimization**
+
+**Description:** A strategic indexing architecture that leverages MongoDB's B-Tree index structures and compound indexing to dramatically reduce query execution times. The algorithm employs the leftmost prefix rule for multi-field queries (userId + date + mealType), uses sparse indexes to conserve storage on optional fields, implements unique constraints to enforce business logic (one weight per user per day), and creates targeted indexes for common access patterns like date-range queries and foreign key lookups. This transforms O(n) collection scans into O(log n) index seeks.
 
 #### **6.1 MealEntry Indexes**
 
@@ -347,7 +371,11 @@ Use case: Avoid duplicate entries for "Piattos" by "Oishi"
 
 **Location:** `src/utils/populateUserData.ts`
 
+**Algorithm Name:** Hash Map Grouping with Population (JOIN)
+
 ### **Concept: Relational to Document Transformation**
+
+**Description:** A data denormalization pipeline that reconstructs hierarchical diet history documents from normalized relational tables, simulating SQL JOIN and GROUP BY operations in MongoDB. The algorithm performs population (JOIN) between MealEntry and ScanResult collections, accumulates entries into a hash map grouped by date strings, organizes meals into structured breakfast/lunch/dinner/snack categories, and converts the map into a sorted array. This transformation maintains API backward compatibility by presenting normalized 3NF data in the legacy embedded document format expected by the frontend.
 
 - **Purpose:** Convert normalized database (3NF) back to nested JSON for frontend
 - **Pattern:** JOIN + GROUP BY simulation in MongoDB
@@ -413,7 +441,11 @@ GROUP BY date, mealType
 
 **Location:** `src/utils/ingredientsNutritionsPredict.ts`
 
+**Algorithm Name:** Prompt-Driven Categorical Classification
+
 ### **Concept: AI-Powered Nutritional Classification**
+
+**Description:** An intelligent nutrient categorization system that uses Gemini AI's domain knowledge of nutrition science to automatically organize raw nutrient data into scientifically meaningful groups. The algorithm constructs precise prompts defining macronutrient (carbs, proteins, fats), micronutrient (vitamins, minerals), and other nutrient (amino acids, fatty acids) categories, parses the AI's structured JSON response, filters out negligible values (< 0.01), and removes empty groups. This automated classification eliminates the need for hardcoded nutrient categorization rules while adapting to new or uncommon nutrients.
 
 - **Purpose:** Categorize nutrients into Macronutrients, Micronutrients, Other Nutrients
 - **Method:** Prompt engineering with structured output
@@ -463,7 +495,11 @@ Output: Grouped nutrition with meaningful values only
 
 **Location:** `src/utils/nutritionixMap.ts`
 
+**Algorithm Name:** Direct Hash Map Translation
+
 ### **Concept: Hash Map Lookup for O(1) Translation**
+
+**Description:** A constant-time translation layer that converts Nutritionix's proprietary numeric attribute IDs into standardized human-readable nutrient names with appropriate units. The algorithm maintains a comprehensive 203-entry hash map derived from USDA's FoodData Central nutrient database, performs direct key lookups for each nutrient in the API response, and constructs normalized nutrient objects with correct units (g, mg, µg, IU). This decoupling allows the application to work with semantic nutrient names while efficiently processing Nutritionix's compact numeric format.
 
 - **Purpose:** Convert Nutritionix numeric IDs to human-readable names with units
 
@@ -498,7 +534,11 @@ Output: [{name: "Protein", value: 25, unit: "g"}, ...]
 
 **Location:** `src/utils/foodCameraUtils.ts`
 
+**Algorithm Name:** Depth-First Search (DFS) with Language Filtering
+
 ### **Concept: Recursive Tree Traversal with Language Filtering**
+
+**Description:** A depth-first tree traversal algorithm that navigates Open Food Facts' hierarchical ingredient taxonomy to extract English-language ingredient names while ignoring non-English entries. The algorithm recursively explores nested ingredient structures (e.g., "milk" containing "lactose", "whey"), validates language codes using the "en:" prefix pattern, accumulates text values into a flat array, and handles arbitrary nesting depths. This flattening process converts complex ingredient hierarchies into simple lists suitable for allergen matching and display.
 
 - **Purpose:** Extract English ingredient names from nested Open Food Facts structure
 
@@ -535,7 +575,11 @@ Example:
 
 **Location:** `src/utils/foodCameraUtils.ts`
 
+**Algorithm Name:** Regex-Based Sanitization with Set Deduplication
+
 ### **Concept: String Normalization with Deduplication**
+
+**Description:** A multi-stage text sanitization pipeline that transforms raw, inconsistent ingredient strings from various APIs into clean, standardized forms suitable for exact matching. The algorithm applies regex-based parenthetical content removal to eliminate qualifiers like "(enriched)", strips special characters while preserving meaningful delimiters (& and -), normalizes whitespace and casing, filters out noise (empty strings, excessively long names > 40 chars), and uses Set-based deduplication to ensure uniqueness. This produces a canonical ingredient list optimized for reliable allergen detection.
 
 - **Purpose:** Clean ingredient strings for accurate allergen matching
 
@@ -571,7 +615,11 @@ Output: Clean, unique ingredient list
 
 **Location:** `src/controllers/authLocalController.ts`, `authGoogleController.ts`
 
+**Algorithm Name:** Lazy Loading with Parallel Data Hydration
+
 ### **Concept: Lazy Loading with Data Enrichment**
+
+**Description:** A selective data hydration strategy that enriches minimal user account records with related data on-demand during authentication events. The algorithm triggers only at strategic checkpoints (login, session validation, OAuth callback), fetches the base UserAccount document, executes parallel queries to retrieve associated MealEntry and LoggedWeight records using indexed lookups, transforms the relational data into nested structures via aggregation functions, and attaches the enriched data to the session object. This balances performance (loads data once per session) with memory efficiency (avoids storing redundant data in UserAccount).
 
 - **Purpose:** Populate user session with denormalized data for frontend compatibility
 
@@ -621,7 +669,11 @@ Result: Frontend receives backward-compatible user object
 
 **Location:** `src/controllers/accountController.ts`
 
+**Algorithm Name:** Find-or-Create Pattern with Composite Key Matching
+
 ### **Concept: Find-or-Create Pattern with Multi-Field Lookup**
+
+**Description:** A database normalization technique that maintains a single canonical representation of each unique food item across all users and meal entries. The algorithm attempts to locate existing ScanResult records using a two-pronged search strategy: first by external API reference (sourceId + source) for API-sourced foods, then by semantic identity (name + brand) for manual entries. Upon finding a match, it reuses the existing record's ID; otherwise, it creates a new ScanResult and stores the sourceId for future deduplication. This approach dramatically reduces storage redundancy and ensures data consistency.
 
 - **Purpose:** Prevent duplicate food items in ScanResult collection
 
@@ -662,7 +714,11 @@ Benefits:
 
 **Location:** `src/utils/getDateString.ts`
 
+**Algorithm Name:** ISO 8601 Date Normalization with Zero-Padding
+
 ### **Concept: Timezone-Agnostic Date Formatting**
+
+**Description:** A timezone-independent date normalization utility that converts diverse date representations (Date objects, ISO strings, custom formats) into a canonical YYYY-MM-DD string format. The algorithm extracts date components using local time methods (avoiding timezone shifts), applies zero-padding to month and day values for consistent length, and produces lexicographically sortable strings. This standardization is critical for database indexing, date-based queries, and ensuring that users in different timezones reference the same logical calendar date for meal logging.
 
 - **Purpose:** Consistent date strings regardless of timezone
 
@@ -700,7 +756,11 @@ Benefits:
 
 **Location:** `src/models/UserAccount.ts`
 
+**Algorithm Name:** Stateful Counter with Time-Based Lockout
+
 ### **Concept: Exponential Backoff for Brute Force Prevention**
+
+**Description:** A security mechanism that defends against brute-force password attacks by temporarily locking accounts after repeated failed login attempts. The algorithm maintains stateful counters (loginAttempts) and timestamps (lockUntil) for each account, checks lock status before authentication, increments failure counters on invalid passwords, triggers a 15-minute lockout after 5 failed attempts, and automatically resets counters upon successful login. This rate-limiting approach makes automated password guessing computationally infeasible while allowing legitimate users to recover from typos.
 
 - **Purpose:** Protect accounts from password guessing attacks
 
