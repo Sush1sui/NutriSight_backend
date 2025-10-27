@@ -5,19 +5,19 @@ import sharp from "sharp";
 const mean = [0.485, 0.456, 0.406];
 const std = [0.229, 0.224, 0.225];
 
-// Preprocess image to Float32Array [1, 3, 256, 256]
+// Preprocess image to Float32Array [1, 3, 252, 252]
 async function preprocessImageBuffer(
   imageBuffer: Buffer
 ): Promise<Float32Array> {
-  const image = sharp(imageBuffer).resize(256, 256).removeAlpha().raw();
+  const image = sharp(imageBuffer).resize(252, 252).removeAlpha().raw();
   const { data } = await image.toBuffer({ resolveWithObject: true });
-  const floatData = new Float32Array(3 * 256 * 256);
+  const floatData = new Float32Array(3 * 252 * 252);
 
-  for (let y = 0; y < 256; y++) {
-    for (let x = 0; x < 256; x++) {
+  for (let y = 0; y < 252; y++) {
+    for (let x = 0; x < 252; x++) {
       for (let c = 0; c < 3; c++) {
-        const idx = y * 256 * 3 + x * 3 + c;
-        const chwIdx = c * 256 * 256 + y * 256 + x;
+        const idx = y * 252 * 3 + x * 3 + c;
+        const chwIdx = c * 252 * 252 + y * 252 + x;
         floatData[chwIdx] = (data[idx] / 255 - mean[c]) / std[c];
       }
     }
@@ -49,7 +49,7 @@ export async function classifyImage(
   const session = await ort.InferenceSession.create(modelPath);
   const input = await preprocessImageBuffer(imageBuffer);
 
-  const tensor = new ort.Tensor("float32", input, [1, 3, 256, 256]);
+  const tensor = new ort.Tensor("float32", input, [1, 3, 252, 252]);
   // Try to infer input/output names
   const inputName = session.inputNames[0];
   const outputName = session.outputNames[0];
