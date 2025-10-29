@@ -429,33 +429,6 @@ export async function predictFoodHandler(req: Request, res: Response) {
       return;
     }
 
-    // send image to hugging face for inference api
-    // const hfRes = await fetch(
-    //   "https://api-inference.huggingface.co/models/Sush1sui/nutrisight_v1",
-    //   {
-    //     method: "POST",
-    //     headers: {
-    //       Authorization: `Bearer ${HUGGINGFACE_API_KEY}`,
-    //       "Content-Type": "application/octet-stream",
-    //     },
-    //     body: Buffer.from(image, "base64"),
-    //   }
-    // );
-
-    // if (!hfRes.ok) {
-    //   const errBody = await hfRes.text();
-    //   console.error("Hugging Face API error:", errBody);
-    //   res.status(500).json({
-    //     error: "Failed to fetch data from Hugging Face",
-    //     message: errBody,
-    //   });
-    //   return;
-    // }
-
-    // const predictions = (await hfRes.json()) as any[];
-
-    // console.log("Predictions from Hugging Face:", predictions);
-
     let imgBuffer: Buffer<ArrayBufferLike> | null = Buffer.from(
       image,
       "base64"
@@ -467,6 +440,61 @@ export async function predictFoodHandler(req: Request, res: Response) {
       classNames,
       5
     );
+
+    // call external food/not-food microservice
+    try {
+      const MICRO_URL =
+        "https://food-not-food-microservice.onrender.com/predict";
+      const MS_API_KEY =
+        process.env.FOOD_NOT_FOOD_API_KEY ||
+        process.env.FOOD_MICROSERVICE_API_KEY;
+
+      // Use global FormData/Blob to avoid adding dependencies; cast to any for TypeScript
+      const FormDataClass: any = (globalThis as any).FormData;
+      const BlobClass: any = (globalThis as any).Blob;
+
+      if (FormDataClass && BlobClass && imgBuffer) {
+        const form: any = new FormDataClass();
+        const blob = new BlobClass([imgBuffer], { type: "image/jpeg" });
+        form.append("image", blob, "image.jpg");
+
+        const headers: any = {};
+        if (MS_API_KEY) headers["x-api-key"] = MS_API_KEY;
+
+        const msResp = await fetch(MICRO_URL, {
+          method: "POST",
+          body: form,
+          headers,
+        });
+
+        if (msResp.ok) {
+          const msJson = (await msResp.json()) as any;
+          console.log("Food/not-food microservice response:", msJson);
+          if (msJson?.result === "not_food") {
+            // return predictions but include the required error field
+            res.status(200).json({
+              message: "Food scan data received successfully",
+              data: predictions,
+              error: "not food",
+            });
+            imgBuffer = null;
+            return;
+          }
+        } else {
+          console.warn(
+            "Food/not-food microservice returned non-OK status:",
+            msResp.status
+          );
+        }
+      } else {
+        console.warn(
+          "Skipping microservice call: FormData/Blob not available or no image buffer"
+        );
+      }
+    } catch (msErr) {
+      console.error("Error calling food/not-food microservice:", msErr);
+      // fall through to normal response
+    }
 
     imgBuffer = null;
 
