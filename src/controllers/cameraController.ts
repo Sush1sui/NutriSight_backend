@@ -438,7 +438,7 @@ export async function predictFoodHandler(req: Request, res: Response) {
       imgBuffer,
       modelPath,
       classNames,
-      5
+      3
     );
 
     // call external food/not-food microservice
