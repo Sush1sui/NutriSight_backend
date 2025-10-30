@@ -6,6 +6,7 @@ import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { getDateString } from "../utils/getDateString";
 import { populateUserWithDynamicData } from "../utils/populateUserData";
+import { incrementKey, getKeyValue } from "../utils/mongoRateLimit";
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_TIME = 15 * 60 * 1000; // 15 minutes
@@ -25,6 +26,61 @@ export const sendOtp = async (req: Request, res: Response) => {
     if (!email) {
       res.status(400).json({ message: "Email is required" });
       return;
+    }
+
+    // Rate limit checks (per-email and per-IP)
+    try {
+      const ip =
+        (req.headers["x-forwarded-for"] as string) ||
+        (req.socket && req.socket.remoteAddress) ||
+        (req.ip as string) ||
+        "unknown";
+
+      const EMAIL_WINDOW = parseInt(
+        process.env.SIGNUP_EMAIL_WINDOW_SECONDS || "3600"
+      );
+      const IP_WINDOW = parseInt(
+        process.env.SIGNUP_IP_WINDOW_SECONDS || "3600"
+      );
+      const MAX_PER_EMAIL = parseInt(process.env.SIGNUP_MAX_PER_EMAIL || "3");
+      const MAX_PER_IP = parseInt(process.env.SIGNUP_MAX_PER_IP || "20");
+
+      const emailKey = `signup:email:${email.toLowerCase()}`;
+      const ipKey = `signup:ip:${ip}`;
+
+      const emailCount = await getKeyValue(emailKey, EMAIL_WINDOW).catch(
+        (e) => {
+          console.warn("Rate-limit getKeyValue error (email)", e);
+          return 0;
+        }
+      );
+      if (emailCount >= MAX_PER_EMAIL) {
+        res.status(429).json({
+          message: "Too many signup attempts for this email. Try again later.",
+        });
+        return;
+      }
+
+      const ipCount = await getKeyValue(ipKey, IP_WINDOW).catch((e) => {
+        console.warn("Rate-limit getKeyValue error (ip)", e);
+        return 0;
+      });
+      if (ipCount >= MAX_PER_IP) {
+        res.status(429).json({
+          message: "Too many signup attempts from this IP. Try again later.",
+        });
+        return;
+      }
+
+      // increment counters with expiry window (mongo-backed)
+      await incrementKey(emailKey, EMAIL_WINDOW).catch((e) =>
+        console.warn("Rate-limit incrementKey error (email)", e)
+      );
+      await incrementKey(ipKey, IP_WINDOW).catch((e) =>
+        console.warn("Rate-limit incrementKey error (ip)", e)
+      );
+    } catch (err) {
+      console.warn("Rate-limit check failed, continuing:", err);
     }
 
     // Check if user exists and already verified
@@ -94,6 +150,41 @@ export const register = async (req: Request, res: Response) => {
   if (existing && existing.isVerified) {
     res.status(409).json({ message: "Email already registered" });
     return;
+  }
+
+  // IP-based rate limit for account creation only.
+  try {
+    const ip =
+      (req.headers["x-forwarded-for"] as string) ||
+      (req.socket && req.socket.remoteAddress) ||
+      (req.ip as string) ||
+      "unknown";
+
+    // Default: 10 minutes window (600s) and max 500 accounts per IP
+    const IP_WINDOW = parseInt(process.env.SIGNUP_IP_WINDOW_SECONDS || "600");
+    const MAX_PER_IP = parseInt(process.env.SIGNUP_MAX_PER_IP || "500");
+
+    const ipKey = `signup:ip:${ip}`;
+
+    const ipCount = await getKeyValue(ipKey, IP_WINDOW).catch((e) => {
+      console.warn("Rate-limit getKeyValue error (ip)", e);
+      return 0;
+    });
+    if (ipCount >= MAX_PER_IP) {
+      res
+        .status(429)
+        .json({
+          message: "Too many account creations from this IP. Try again later.",
+        });
+      return;
+    }
+
+    // increment counter for this IP
+    await incrementKey(ipKey, IP_WINDOW).catch((e) =>
+      console.warn("Rate-limit incrementKey error (ip)", e)
+    );
+  } catch (err) {
+    console.warn("Rate-limit check failed, continuing:", err);
   }
   const hashed = await bcrypt.hash(password, 10);
   const otp = crypto.randomInt(1000, 9999).toString();
