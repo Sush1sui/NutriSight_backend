@@ -76,15 +76,8 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
         user = await existingUser.save();
 
-        const userObj = user.toObject ? user.toObject() : user;
-        delete (userObj as any).password;
-
-        // Populate dietHistory and loggedWeights for frontend
-        const populatedUser = await populateUserWithDynamicData(userObj);
-
         res.status(200).json({
           message: "User authenticated successfully",
-          user: populatedUser,
           success: true,
         });
       } else {
@@ -126,9 +119,6 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
       }
 
       await user.save();
-
-      const userObj = user.toObject ? user.toObject() : user;
-      delete (userObj as any).password;
 
       res.status(200).json({
         message: "User authenticated successfully",
