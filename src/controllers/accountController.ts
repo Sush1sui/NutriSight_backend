@@ -5,7 +5,10 @@ import MealEntry from "../models/MealEntry";
 import LoggedWeight from "../models/LoggedWeight";
 import { v2 as cloudinary } from "cloudinary";
 import { getDateString } from "../utils/getDateString";
-import { buildDietHistoryResponse } from "../utils/populateUserData";
+import {
+  buildDietHistoryResponse,
+  populateUserWithDynamicData,
+} from "../utils/populateUserData";
 
 const ALLOWED_FIELDS = [
   "gender",
@@ -291,9 +294,12 @@ export const deleteDietHistoryByDate = async (req: Request, res: Response) => {
     // Fetch updated user data with all diet history
     const updatedUser = await UserAccount.findById(uid).lean();
 
+    // populate user with dynamic data
+    const populatedUser = await populateUserWithDynamicData(updatedUser);
+
     res.status(200).json({
       message: "Diet history entry deleted",
-      user: updatedUser,
+      user: populatedUser,
     });
   } catch (error) {
     console.error("Error deleting diet history:", error);
