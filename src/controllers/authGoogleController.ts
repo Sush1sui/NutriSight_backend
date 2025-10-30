@@ -78,6 +78,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
         res.status(200).json({
           message: "User authenticated successfully",
+          email: user.email,
           success: true,
         });
       } else {
@@ -122,6 +123,7 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
 
       res.status(200).json({
         message: "User authenticated successfully",
+        email: user.email,
         success: true,
       });
       return;
