@@ -130,12 +130,8 @@ export const verifyGoogleToken = async (req: Request, res: Response) => {
       const userObj = user.toObject ? user.toObject() : user;
       delete (userObj as any).password;
 
-      // Populate dietHistory and loggedWeights for frontend
-      const populatedUser = await populateUserWithDynamicData(userObj);
-
       res.status(200).json({
         message: "User authenticated successfully",
-        user: populatedUser,
         success: true,
       });
       return;
