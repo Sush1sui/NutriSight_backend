@@ -331,14 +331,12 @@ export const addLoggedWeight = async (req: Request, res: Response) => {
       { upsert: true, new: true }
     );
 
-    // Get all logged weights for response
-    const allWeights = await LoggedWeight.find({ userId: uid }).sort({
-      date: -1,
-    });
+    const user = await UserAccount.findById(uid);
+    const populatedUser = await populateUserWithDynamicData(user);
 
     res.status(200).json({
       message: "Weight logged successfully",
-      loggedWeights: allWeights.map((w) => ({ value: w.value, date: w.date })),
+      data: populatedUser,
     });
   } catch (error) {
     console.error("Error logging weight:", error);
