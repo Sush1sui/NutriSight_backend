@@ -108,7 +108,30 @@ export const updateAccount = async (req: Request, res: Response) => {
       return;
     }
 
-    res.status(200).json({ message: "Profile updated", data: user });
+    // If loggedWeights array is provided, upsert each entry into LoggedWeight
+    const loggedWeightsPayload = req.body.loggedWeights;
+    if (Array.isArray(loggedWeightsPayload)) {
+      for (const weightEntry of loggedWeightsPayload) {
+        if (
+          weightEntry &&
+          (weightEntry.value || weightEntry.value === 0) &&
+          weightEntry.date
+        ) {
+          const dateStr = getDateString(weightEntry.date);
+          await LoggedWeight.findOneAndUpdate(
+            { userId: uid, date: dateStr },
+            { value: weightEntry.value, date: dateStr },
+            { upsert: true, new: true }
+          );
+        }
+      }
+    }
+
+    // Return the updated user with dynamic data (diet history, loggedWeights, etc.)
+    const updatedUser = await UserAccount.findById(uid).lean();
+    const populatedUser = await populateUserWithDynamicData(updatedUser);
+
+    res.status(200).json({ message: "Profile updated", data: populatedUser });
   } catch (error) {
     console.error("Error updating account:", error);
     res.status(500).json({ error: "Internal server error" });
