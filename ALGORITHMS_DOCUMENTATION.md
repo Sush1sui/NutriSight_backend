@@ -800,6 +800,436 @@ Unlock:
 
 ---
 
+## **16. SIGNUP RATE LIMITING ALGORITHM**
+
+**Location:** `src/utils/mongoRateLimit.ts`, `src/models/Rate.ts`, `src/controllers/authLocalController.ts`
+
+**Algorithm Name:** Sliding Window Counter with TTL-Based Expiration
+
+### **Concept: MongoDB-Backed Rate Limiting with Automatic Cleanup**
+
+**Description:** A distributed rate-limiting system that prevents signup spam and abuse by tracking request counts per IP address and email using MongoDB as a persistent store. The algorithm implements sliding window counters that expire after configurable time windows, uses atomic findOneAndUpdate operations to prevent race conditions in concurrent environments, leverages MongoDB TTL indexes for automatic document cleanup when windows expire, and employs a fail-open strategy to maintain availability even if the rate limiter encounters errors. This approach eliminates the need for Redis while providing reliable, scalable rate limiting suitable for multi-instance deployments.
+
+- **Purpose:** Prevent spam account creation and OTP abuse
+- **Storage:** MongoDB with TTL indexes (no Redis required)
+- **Pattern:** Sliding window with atomic increments
+
+### **Algorithm Steps:**
+
+#### **16.1 Rate Model (MongoDB Schema)**
+
+```
+Collection: rates
+
+Schema:
+  - key: string (unique) - Format: "signup:ip:xxx.xxx.xxx.xxx" or "signup:email:user@example.com"
+  - count: number (default: 0) - Number of requests in current window
+  - createdAt: Date (default: Date.now) - Window start time
+  - expireAt: Date - Absolute expiration timestamp
+
+Indexes:
+  1. { key: 1 } - Unique constraint for fast lookups
+  2. { expireAt: 1 } - TTL index (expireAfterSeconds: 0)
+     → MongoDB automatically deletes docs when expireAt <= now
+
+Benefits:
+  - Automatic cleanup (no manual sweeping)
+  - Distributed consistency (shared state across app instances)
+  - Persistent (survives app restarts)
+  - No external dependencies (Redis-free)
+```
+
+#### **16.2 Get Current Count**
+
+```
+Input: key (string), windowSeconds (number)
+
+Algorithm (getKeyValue):
+  1. Query: Rate.findOne({ key })
+
+  2. If no document found:
+     return 0 (never seen before)
+
+  3. If document.expireAt exists:
+     a. If expireAt <= now:
+        return 0 (window expired, treat as reset)
+     b. Else:
+        return document.count (within window)
+
+  4. If no expireAt (legacy docs):
+     a. Calculate age: now - document.createdAt
+     b. If age > windowSeconds * 1000:
+        return 0 (window expired)
+     c. Else:
+        return document.count
+
+Output: Current count for this key (0 if expired)
+```
+
+#### **16.3 Increment Counter (Atomic)**
+
+```
+Input: key (string), windowSeconds (number)
+
+Algorithm (incrementKey):
+  1. Calculate timestamps:
+     now = new Date()
+     expireAt = new Date(now + windowSeconds * 1000)
+
+  2. Attempt atomic increment (non-expired docs only):
+     query = {
+       key,
+       $or: [
+         { expireAt: { $exists: false } },  // legacy docs
+         { expireAt: { $gt: now } }         // not yet expired
+       ]
+     }
+     update = { $inc: { count: 1 } }
+     options = { new: true }
+
+     result = Rate.findOneAndUpdate(query, update, options)
+
+  3. If increment succeeded (result != null):
+     return result.count
+
+  4. If increment failed (window expired or first request):
+     Reset counter with upsert:
+     query = { key }
+     update = {
+       $set: {
+         count: 1,
+         createdAt: now,
+         expireAt
+       }
+     }
+     options = { upsert: true, new: true }
+
+     result = Rate.findOneAndUpdate(query, update, options)
+     return result.count || 1
+
+Output: New count after increment
+```
+
+#### **16.4 Rate Limiting Check (sendOtp)**
+
+```
+Purpose: Prevent OTP spam (per-email and per-IP)
+
+Configuration (env vars with defaults):
+  - EMAIL_WINDOW: 3600 seconds (1 hour)
+  - MAX_PER_EMAIL: 3 attempts
+  - IP_WINDOW: 3600 seconds (1 hour)
+  - MAX_PER_IP: 20 attempts
+
+Algorithm:
+  1. Extract identifiers:
+     email = req.body.email.toLowerCase()
+     ip = req.headers['x-forwarded-for'] || req.ip
+
+  2. Build keys:
+     emailKey = "signup:email:" + email
+     ipKey = "signup:ip:" + ip
+
+  3. Check email limit:
+     emailCount = await getKeyValue(emailKey, EMAIL_WINDOW)
+     if (emailCount >= MAX_PER_EMAIL):
+       return 429 "Too many signup attempts for this email"
+
+  4. Check IP limit:
+     ipCount = await getKeyValue(ipKey, IP_WINDOW)
+     if (ipCount >= MAX_PER_IP):
+       return 429 "Too many signup attempts from this IP"
+
+  5. Increment both counters (atomic):
+     await incrementKey(emailKey, EMAIL_WINDOW)
+     await incrementKey(ipKey, IP_WINDOW)
+
+  6. Proceed with OTP generation and email
+
+Error Handling (Fail-Open):
+  - All rate limit operations wrapped in try-catch
+  - On error: log warning and continue (don't block user)
+  - Rationale: Prefer availability over strict limiting
+```
+
+#### **16.5 Rate Limiting Check (register)**
+
+```
+Purpose: Prevent mass account creation from single IP
+
+Configuration (env vars with defaults):
+  - IP_WINDOW: 600 seconds (10 minutes)
+  - MAX_PER_IP: 500 accounts
+
+Algorithm:
+  1. Extract IP:
+     ip = req.headers['x-forwarded-for'] || req.ip
+
+  2. Build key:
+     ipKey = "signup:ip:" + ip
+
+  3. Check IP limit:
+     ipCount = await getKeyValue(ipKey, IP_WINDOW)
+     if (ipCount >= MAX_PER_IP):
+       return 429 "Too many account creations from this IP"
+
+  4. Increment counter (atomic):
+     await incrementKey(ipKey, IP_WINDOW)
+
+  5. Proceed with account creation
+
+Design Rationale (IP-only for register):
+  - Allows multiple users behind same NAT (home WiFi, office)
+  - High MAX_PER_IP (500) accommodates legitimate shared networks
+  - Per-email not needed (already unique in DB)
+  - Focuses on preventing automated bot attacks
+```
+
+### **Key Design Decisions**
+
+#### **1. Why MongoDB over Redis?**
+
+```
+Advantages:
+  ✅ No additional infrastructure (already using Mongo)
+  ✅ Persistent across restarts (Redis volatile by default)
+  ✅ Simpler deployment (one less service)
+  ✅ TTL indexes handle cleanup automatically
+  ✅ Sufficient performance for moderate traffic
+
+Trade-offs:
+  ⚠️ Slightly higher latency than Redis (milliseconds)
+  ⚠️ More disk I/O (less critical for infrequent writes)
+
+Suitable for:
+  - Small to medium scale (< 1000 req/sec)
+  - Applications already using MongoDB
+  - Cost-sensitive deployments
+```
+
+#### **2. Why Fail-Open Strategy?**
+
+```
+Philosophy: Availability > Strict Security
+
+Reasoning:
+  - Rate limiter failure shouldn't block legitimate users
+  - False positives worse than false negatives for signup
+  - Logs still capture errors for investigation
+  - Other security layers exist (email verification, account lockout)
+
+Implementation:
+  try {
+    // rate limit check
+  } catch (err) {
+    console.warn("Rate limit check failed:", err)
+    // continue anyway (fail-open)
+  }
+```
+
+#### **3. Why TTL Index over Cron Cleanup?**
+
+```
+TTL Index (Chosen):
+  ✅ Automatic (no cron jobs)
+  ✅ Built-in MongoDB feature
+  ✅ Runs in background (non-blocking)
+  ✅ Efficient (only removes expired docs)
+
+Cron Cleanup (Alternative):
+  ⚠️ Requires job scheduler
+  ⚠️ Manual implementation
+  ⚠️ Potential for accumulation between runs
+  ⚠️ Additional complexity
+
+TTL Limitation:
+  - Cleanup may lag by 60 seconds (MongoDB background task)
+  - Acceptable for rate limiting use case
+```
+
+#### **4. Why Separate Windows for sendOtp vs register?**
+
+```
+sendOtp:
+  - Per-email: 3 requests / 1 hour
+  - Per-IP: 20 requests / 1 hour
+  - Rationale: Prevent OTP enumeration and email bombing
+
+register:
+  - Per-IP: 500 accounts / 10 minutes
+  - Rationale: Stop automated bot signups while allowing shared IPs
+
+Different threat models:
+  - sendOtp: Targets individual users (harassment, enumeration)
+  - register: Targets infrastructure (spam accounts, abuse)
+```
+
+### **Time Complexity Analysis**
+
+| Operation         | Complexity | Notes                           |
+| ----------------- | ---------- | ------------------------------- |
+| getKeyValue       | O(log n)   | Indexed key lookup              |
+| incrementKey      | O(log n)   | Indexed update + atomic counter |
+| TTL cleanup       | O(1)       | Background process, amortized   |
+| Rate limit check  | O(log n)   | Two indexed lookups             |
+| Worst case (cold) | O(log n)   | Index creation on first query   |
+
+**Where n = number of active rate limit keys (typically < 10,000)**
+
+### **Space Complexity**
+
+```
+Per Rate Document: ~150 bytes
+  - _id: 12 bytes (ObjectId)
+  - key: ~40 bytes (string with prefix)
+  - count: 8 bytes (number)
+  - createdAt: 8 bytes (Date)
+  - expireAt: 8 bytes (Date)
+  - Indexes: ~50 bytes
+  - MongoDB overhead: ~20 bytes
+
+Example Storage (1000 active sessions):
+  1000 docs × 150 bytes = 150 KB
+
+TTL Cleanup Impact:
+  - Max lifetime: windowSeconds (600-3600 sec)
+  - Auto-deleted after expireAt
+  - Steady state: only active windows stored
+```
+
+### **Monitoring & Tuning**
+
+#### **Key Metrics to Track**
+
+```javascript
+// Log rate limit hits
+if (count >= MAX_PER_IP) {
+  console.warn("Rate limit hit", {
+    key: ipKey,
+    count,
+    max: MAX_PER_IP,
+    timestamp: new Date(),
+  });
+}
+
+// Monitor rate collection size
+db.rates.stats(); // Check totalSize, count, avgObjSize
+
+// Track 429 responses
+// (can integrate with monitoring tools like Datadog, Sentry)
+```
+
+#### **Tuning Guidelines**
+
+```
+Too many 429 errors:
+  → Increase MAX_PER_IP / MAX_PER_EMAIL
+  → Increase WINDOW_SECONDS (longer window = more lenient)
+
+Spam getting through:
+  → Decrease MAX_PER_IP / MAX_PER_EMAIL
+  → Add CAPTCHA for high-risk IPs
+  → Implement device fingerprinting
+
+Collection growing too large:
+  → Verify TTL index is active: db.rates.getIndexes()
+  → Check expireAt values are being set
+  → Reduce WINDOW_SECONDS to expire faster
+
+Performance degradation:
+  → Add compound index if querying by multiple fields
+  → Consider migrating to Redis for > 1000 req/sec
+  → Use MongoDB replica set for read scaling
+```
+
+### **Security Considerations**
+
+#### **IP Spoofing Prevention**
+
+```javascript
+// Trust proxy setting (Heroku, AWS ALB, etc.)
+app.set("trust proxy", 1);
+
+// Extract real IP (respects X-Forwarded-For)
+const ip =
+  (req.headers["x-forwarded-for"] as string) ||
+  req.socket?.remoteAddress ||
+  req.ip ||
+  "unknown";
+
+// Fallback for missing IP
+if (ip === "unknown") {
+  // Can choose to block or allow (currently allows)
+  console.warn("Unable to determine client IP");
+}
+```
+
+#### **Distributed Attack Mitigation**
+
+```
+Single IP attack:
+  ✅ Blocked by IP rate limit
+
+Distributed attack (botnet with many IPs):
+  ⚠️ Harder to detect with IP-only limiting
+
+Additional defenses:
+  - Email verification (required)
+  - CAPTCHA on suspicious activity
+  - Behavioral analysis (request patterns)
+  - Cloudflare / WAF (DDoS protection)
+```
+
+#### **Privacy Considerations**
+
+```
+IP Address Storage:
+  - Hashed in key (not stored in plaintext)
+  - Auto-deleted after window expires (TTL)
+  - GDPR compliance: minimal retention, legitimate interest
+
+Email Storage:
+  - Hashed in key (lowercased for consistency)
+  - Tied to actual user account (already stored)
+  - No additional PII collected
+```
+
+---
+
+## **SUMMARY TABLE**
+
+| Algorithm               | Purpose              | Time Complexity | Space Complexity |
+| ----------------------- | -------------------- | --------------- | ---------------- |
+| CNN Inference           | Food classification  | O(1) per image  | O(1)             |
+| Allergen Detection      | Safety matching      | O(n)            | O(n)             |
+| Nutrition Normalization | Data standardization | O(n)            | O(n)             |
+| Unit Conversion         | Standardize units    | O(1)            | O(1)             |
+| API Cascade             | Data retrieval       | O(k) worst case | O(1)             |
+| Database Indexing       | Query optimization   | O(log n)        | O(n)             |
+| Diet Aggregation        | Data transformation  | O(n log n)      | O(n)             |
+| Nutrition Grouping      | AI categorization    | O(n)            | O(n)             |
+| Nutrient Mapping        | ID translation       | O(n)            | O(1)             |
+| Ingredient Extraction   | Text parsing         | O(n)            | O(n)             |
+| Deduplication           | Storage optimization | O(log n)        | O(1)             |
+| Session Population      | Data enrichment      | O(m + w)        | O(m + w)         |
+| Date Normalization      | Time formatting      | O(1)            | O(1)             |
+| Rate Limiting           | Security             | O(1)            | O(1)             |
+| Signup Rate Limiting    | Spam prevention      | O(log n)        | O(k)             |
+
+**Where:**
+
+- n = number of items (nutrients, ingredients, etc.)
+- k = number of API fallback sources or active rate limit keys
+- m = meal entries
+- w = weight logs
+
+---
+
+**Last Updated:** November 2, 2025  
+**Version:** 1.1
+
+---
+
 ## **SUMMARY TABLE**
 
 | Algorithm               | Purpose              | Time Complexity | Space Complexity |
