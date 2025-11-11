@@ -152,16 +152,6 @@ export const updateDietHistory = async (req: Request, res: Response) => {
       return;
     }
 
-    // DEBUG: Log incoming date from frontend
-    console.log("=== DEBUG: updateDietHistory ===");
-    console.log("Raw date from frontend:", dietHistoryPayload.date);
-    console.log("Type of date:", typeof dietHistoryPayload.date);
-    console.log("Current server time:", new Date().toISOString());
-    console.log(
-      "Server timezone offset (minutes):",
-      new Date().getTimezoneOffset()
-    );
-
     const uid = (req.user as { _id: string })._id;
     const user = await UserAccount.findById(uid);
 
@@ -187,10 +177,6 @@ export const updateDietHistory = async (req: Request, res: Response) => {
     };
 
     const incomingDateStr = getDateString(dietHistoryPayload.date);
-
-    // DEBUG: Log converted date
-    console.log("Converted date string:", incomingDateStr);
-    console.log("================================");
 
     // Process each meal type and save to normalized tables
     const mealTypes: Array<"breakfast" | "lunch" | "dinner" | "otherMealTime"> =
