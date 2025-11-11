@@ -29,7 +29,7 @@ A comprehensive nutrition tracking and food recognition API built with Node.js, 
 
 ### 🍔 Food Recognition & Analysis
 
-- **AI-Powered Food Classification**: Classify 101+ Filipino food dishes using a custom-trained CNN model
+- **AI-Powered Food Classification**: Classify 130 Filipino food dishes using a custom-trained CNN model (ONNX Runtime)
 - **Barcode Scanning**: Retrieve nutritional information from product barcodes via USDA, Nutritionix, and Open Food Facts APIs
 - **Multi-Source Data Aggregation**: Intelligent fallback cascade across 4+ nutrition databases
 - **Food/Not-Food Detection**: External microservice integration to filter non-food images
@@ -780,18 +780,69 @@ See [DATABASE_ERD.md](./DATABASE_ERD.md) for detailed relationships and ER diagr
 
 ## 🧮 Algorithms
 
-NutriSight implements 15+ sophisticated algorithms for food recognition, nutrition analysis, and data processing:
+NutriSight implements 16 sophisticated algorithms for food recognition, nutrition analysis, and data processing:
+
+### 🔴 Core Algorithms (Critical for Thesis)
 
 1. **CNN Image Classification** - Softmax with top-K selection for Filipino food recognition
+   - _Priority: CRITICAL - Core thesis topic, CNN model implementation_
 2. **Allergen Detection** - LLM-based pattern matching with semantic validation
+   - _Priority: CRITICAL - Key safety feature, AI-powered analysis_
 3. **Nutrition Normalization** - Priority-based consolidation with map deduplication
-4. **Unit Conversion** - Density-aware multi-system standardization
-5. **API Fallback Cascade** - Waterfall pattern for high availability
-6. **Database Indexing** - B-Tree compound indexing with leftmost prefix
-7. **Diet Aggregation** - Hash map grouping with JOIN simulation
-8. **Nutrition Grouping** - Prompt-driven categorical classification
-9. **Rate Limiting** - Mongo-backed sliding window counters with TTL
-10. **And more...**
+   - _Priority: CRITICAL - Essential for data accuracy and consistency_
+4. **API Fallback Cascade** - Waterfall pattern for high availability
+   - _Priority: CRITICAL - System reliability and data source integration_
+
+### 🟡 Supporting Algorithms (Important for Thesis)
+
+5. **Unit Conversion** - Density-aware multi-system standardization
+   - _Priority: HIGH - Enables accurate nutritional calculations_
+6. **Nutrition Grouping** - Prompt-driven categorical classification
+   - _Priority: HIGH - AI-powered nutrition categorization_
+7. **Session Population** - Lazy loading with parallel data hydration
+   - _Priority: HIGH - Performance optimization technique_
+8. **Date String Normalization** - ISO 8601 normalization with zero-padding
+   - _Priority: HIGH - Timezone handling for Filipino users_
+
+### 🟢 Technical Implementation (Include if Space Permits)
+
+9. **Database Indexing** - B-Tree compound indexing with leftmost prefix
+   - _Priority: MEDIUM - Query optimization for scalability_
+10. **Diet Aggregation** - Hash map grouping with JOIN simulation
+    - _Priority: MEDIUM - Data transformation for normalized DB_
+11. **Meal Entry Deduplication** - Find-or-create pattern with composite key matching
+    - _Priority: MEDIUM - Storage optimization_
+
+### ⚪ Utility Algorithms (Optional for Thesis)
+
+12. **Nutritionix Nutrient Mapping** - Direct hash map translation for O(1) lookup
+    - _Priority: LOW - API integration detail_
+13. **Ingredient Text Extraction** - Depth-first search with language filtering
+    - _Priority: LOW - Data parsing utility_
+14. **Ingredient Cleaning** - Regex-based sanitization with set deduplication
+    - _Priority: LOW - Text processing utility_
+15. **Authentication Rate Limiting** - Stateful counter with time-based lockout
+    - _Priority: LOW - Security implementation detail_
+16. **Signup Rate Limiting** - Mongo-backed sliding window counters with TTL
+    - _Priority: LOW - Security implementation detail_
+
+### 📊 Thesis Recommendation
+
+**Must Include (4 algorithms):**
+
+- CNN Image Classification (your main contribution)
+- Allergen Detection (AI safety feature)
+- Nutrition Normalization (data accuracy)
+- API Fallback Cascade (system reliability)
+
+**Should Include (4 algorithms):**
+
+- Unit Conversion (nutritional accuracy)
+- Nutrition Grouping (AI categorization)
+- Session Population (performance)
+- Date String Normalization (localization)
+
+**Optional (remaining 8):** Include based on page limits and focus areas
 
 See [ALGORITHMS_DOCUMENTATION.md](./ALGORITHMS_DOCUMENTATION.md) for detailed algorithm specifications, time complexity analysis, and implementation details.
 

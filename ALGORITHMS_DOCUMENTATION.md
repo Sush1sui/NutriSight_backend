@@ -4,7 +4,41 @@ This document describes all algorithms and computational concepts used in the Nu
 
 ---
 
+## 🎯 Algorithm Priority Guide for Thesis
+
+### 🔴 **CRITICAL** - Must Include in Thesis (Core CNN Food Scanner Functionality)
+
+- **Algorithm #1**: CNN Image Classification
+- **Algorithm #2**: Allergen Detection
+- **Algorithm #3**: Nutrition Normalization
+- **Algorithm #5**: API Fallback Cascade
+
+### 🟡 **HIGH** - Should Include in Thesis (Important Supporting Features)
+
+- **Algorithm #4**: Unit Conversion
+- **Algorithm #8**: Nutrition Grouping
+- **Algorithm #12**: Session Population
+- **Algorithm #14**: Date String Normalization
+
+### 🟢 **MEDIUM** - Include if Space Permits (Technical Implementation)
+
+- **Algorithm #6**: Database Indexing
+- **Algorithm #7**: Diet Aggregation
+- **Algorithm #13**: Meal Entry Deduplication
+
+### ⚪ **LOW** - Optional (Utility Functions & Security)
+
+- **Algorithm #9**: Nutritionix Nutrient Mapping
+- **Algorithm #10**: Ingredient Text Extraction
+- **Algorithm #11**: Ingredient Cleaning
+- **Algorithm #15**: Authentication Rate Limiting
+- **Algorithm #16**: Signup Rate Limiting
+
+---
+
 ## **1. IMAGE CLASSIFICATION ALGORITHM**
+
+**Priority: 🔴 CRITICAL**
 
 **Location:** `src/utils/model_inference.ts`
 
@@ -68,6 +102,8 @@ Output: [{label: "adobo", prob: 0.85}, ...]
 
 ## **2. ALLERGEN DETECTION ALGORITHM**
 
+**Priority: 🔴 CRITICAL**
+
 **Location:** `src/utils/ingredientsNutritionsPredict.ts`
 
 **Algorithm Name:** LLM-Based Pattern Matching with Semantic Validation
@@ -121,6 +157,8 @@ Output: {
 ---
 
 ## **3. NUTRITION DATA NORMALIZATION ALGORITHM**
+
+**Priority: 🔴 CRITICAL**
 
 **Location:** `src/utils/foodCameraUtils.ts`
 
@@ -190,6 +228,8 @@ Output: {name: string, value: number, unit: string}
 
 ## **4. UNIT CONVERSION ALGORITHM**
 
+**Priority: 🟡 HIGH**
+
 **Location:** `src/utils/convertToGrams.ts`
 
 **Algorithm Name:** Density-Aware Unit Normalization
@@ -246,6 +286,8 @@ Context-Dependent Conversion:
 ---
 
 ## **5. API FALLBACK CASCADE ALGORITHM**
+
+**Priority: 🔴 CRITICAL**
 
 **Location:** `src/controllers/cameraController.ts`
 
@@ -306,6 +348,8 @@ Priority Order:
 ---
 
 ## **6. DATABASE INDEXING STRATEGY**
+
+**Priority: 🟢 MEDIUM**
 
 **Location:** Model files (`src/models/`)
 
@@ -368,6 +412,8 @@ Use case: Avoid duplicate entries for "Piattos" by "Oishi"
 ---
 
 ## **7. DIET HISTORY AGGREGATION ALGORITHM**
+
+**Priority: 🟢 MEDIUM**
 
 **Location:** `src/utils/populateUserData.ts`
 
@@ -439,6 +485,8 @@ GROUP BY date, mealType
 
 ## **8. NUTRITION GROUPING ALGORITHM**
 
+**Priority: 🟡 HIGH**
+
 **Location:** `src/utils/ingredientsNutritionsPredict.ts`
 
 **Algorithm Name:** Prompt-Driven Categorical Classification
@@ -493,6 +541,8 @@ Output: Grouped nutrition with meaningful values only
 
 ## **9. NUTRITIONIX NUTRIENT MAPPING ALGORITHM**
 
+**Priority: ⚪ LOW**
+
 **Location:** `src/utils/nutritionixMap.ts`
 
 **Algorithm Name:** Direct Hash Map Translation
@@ -531,6 +581,8 @@ Output: [{name: "Protein", value: 25, unit: "g"}, ...]
 ---
 
 ## **10. INGREDIENT TEXT EXTRACTION ALGORITHM**
+
+**Priority: ⚪ LOW**
 
 **Location:** `src/utils/foodCameraUtils.ts`
 
@@ -573,6 +625,8 @@ Example:
 
 ## **11. INGREDIENT CLEANING ALGORITHM**
 
+**Priority: ⚪ LOW**
+
 **Location:** `src/utils/foodCameraUtils.ts`
 
 **Algorithm Name:** Regex-Based Sanitization with Set Deduplication
@@ -612,6 +666,8 @@ Output: Clean, unique ingredient list
 ---
 
 ## **12. SESSION POPULATION ALGORITHM**
+
+**Priority: 🟡 HIGH**
 
 **Location:** `src/controllers/authLocalController.ts`, `authGoogleController.ts`
 
@@ -667,6 +723,8 @@ Result: Frontend receives backward-compatible user object
 
 ## **13. MEAL ENTRY DEDUPLICATION ALGORITHM**
 
+**Priority: 🟢 MEDIUM**
+
 **Location:** `src/controllers/accountController.ts`
 
 **Algorithm Name:** Find-or-Create Pattern with Composite Key Matching
@@ -712,6 +770,8 @@ Benefits:
 
 ## **14. DATE STRING NORMALIZATION ALGORITHM**
 
+**Priority: 🟡 HIGH**
+
 **Location:** `src/utils/getDateString.ts`
 
 **Algorithm Name:** ISO 8601 Date Normalization with Zero-Padding
@@ -753,6 +813,8 @@ Benefits:
 ---
 
 ## **15. AUTHENTICATION RATE LIMITING ALGORITHM**
+
+**Priority: ⚪ LOW**
 
 **Location:** `src/models/UserAccount.ts`
 
@@ -801,6 +863,8 @@ Unlock:
 ---
 
 ## **16. SIGNUP RATE LIMITING ALGORITHM**
+
+**Priority: ⚪ LOW**
 
 **Location:** `src/utils/mongoRateLimit.ts`, `src/models/Rate.ts`, `src/controllers/authLocalController.ts`
 
