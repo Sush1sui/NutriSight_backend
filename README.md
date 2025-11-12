@@ -799,19 +799,19 @@ NutriSight implements 16 sophisticated algorithms for food recognition, nutritio
    - _Priority: HIGH - Enables accurate nutritional calculations_
 6. **Nutrition Grouping** - Prompt-driven categorical classification
    - _Priority: HIGH - AI-powered nutrition categorization_
-7. **Session Population** - Lazy loading with parallel data hydration
-   - _Priority: HIGH - Performance optimization technique_
-8. **Date String Normalization** - ISO 8601 normalization with zero-padding
-   - _Priority: HIGH - Timezone handling for Filipino users_
+7. **Database Indexing** - B-Tree compound indexing with leftmost prefix
+   - _Priority: HIGH - Query optimization for scalability_
+8. **Diet Aggregation** - Hash map grouping with JOIN simulation
+   - _Priority: HIGH - Data transformation for normalized DB_
+9. **Meal Entry Deduplication** - Find-or-create pattern with composite key matching
+   - _Priority: HIGH - Storage optimization_
 
 ### 🟢 Technical Implementation (Include if Space Permits)
 
-9. **Database Indexing** - B-Tree compound indexing with leftmost prefix
-   - _Priority: MEDIUM - Query optimization for scalability_
-10. **Diet Aggregation** - Hash map grouping with JOIN simulation
-    - _Priority: MEDIUM - Data transformation for normalized DB_
-11. **Meal Entry Deduplication** - Find-or-create pattern with composite key matching
-    - _Priority: MEDIUM - Storage optimization_
+10. **Session Population** - Lazy loading with parallel data hydration
+    - _Priority: MEDIUM - Performance optimization technique_
+11. **Date String Normalization** - ISO 8601 normalization with zero-padding
+    - _Priority: MEDIUM - Timezone handling (server-agnostic)_
 
 ### ⚪ Utility Algorithms (Optional for Thesis)
 
@@ -835,14 +835,15 @@ NutriSight implements 16 sophisticated algorithms for food recognition, nutritio
 - Nutrition Normalization (data accuracy)
 - API Fallback Cascade (system reliability)
 
-**Should Include (4 algorithms):**
+**Should Include (5 algorithms):**
 
 - Unit Conversion (nutritional accuracy)
 - Nutrition Grouping (AI categorization)
-- Session Population (performance)
-- Date String Normalization (localization)
+- Database Indexing (scalability)
+- Diet Aggregation (data transformation)
+- Meal Entry Deduplication (storage optimization)
 
-**Optional (remaining 8):** Include based on page limits and focus areas
+**Optional (remaining 7):** Include based on page limits and focus areas
 
 See [ALGORITHMS_DOCUMENTATION.md](./ALGORITHMS_DOCUMENTATION.md) for detailed algorithm specifications, time complexity analysis, and implementation details.
 

@@ -17,14 +17,14 @@ This document describes all algorithms and computational concepts used in the Nu
 
 - **Algorithm #4**: Unit Conversion
 - **Algorithm #8**: Nutrition Grouping
-- **Algorithm #12**: Session Population
-- **Algorithm #14**: Date String Normalization
-
-### 🟢 **MEDIUM** - Include if Space Permits (Technical Implementation)
-
 - **Algorithm #6**: Database Indexing
 - **Algorithm #7**: Diet Aggregation
 - **Algorithm #13**: Meal Entry Deduplication
+
+### 🟢 **MEDIUM** - Include if Space Permits (Technical Implementation)
+
+- **Algorithm #12**: Session Population
+- **Algorithm #14**: Date String Normalization
 
 ### ⚪ **LOW** - Optional (Utility Functions & Security)
 
@@ -349,7 +349,7 @@ Priority Order:
 
 ## **6. DATABASE INDEXING STRATEGY**
 
-**Priority: 🟢 MEDIUM**
+**Priority: � HIGH**
 
 **Location:** Model files (`src/models/`)
 
@@ -413,7 +413,7 @@ Use case: Avoid duplicate entries for "Piattos" by "Oishi"
 
 ## **7. DIET HISTORY AGGREGATION ALGORITHM**
 
-**Priority: 🟢 MEDIUM**
+**Priority: � HIGH**
 
 **Location:** `src/utils/populateUserData.ts`
 
@@ -667,7 +667,7 @@ Output: Clean, unique ingredient list
 
 ## **12. SESSION POPULATION ALGORITHM**
 
-**Priority: 🟡 HIGH**
+**Priority: � MEDIUM**
 
 **Location:** `src/controllers/authLocalController.ts`, `authGoogleController.ts`
 
@@ -723,7 +723,7 @@ Result: Frontend receives backward-compatible user object
 
 ## **13. MEAL ENTRY DEDUPLICATION ALGORITHM**
 
-**Priority: 🟢 MEDIUM**
+**Priority: � HIGH**
 
 **Location:** `src/controllers/accountController.ts`
 
@@ -785,25 +785,24 @@ Benefits:
 ### **Algorithm Steps:**
 
 ```
-Input: Date object, ISO string, or date string
+Input: ISO date string or date string
 
 Steps:
-  1. Parse input to Date object
-  2. Extract components:
-     - year: getFullYear()
-     - month: getMonth() + 1 (zero-indexed)
-     - day: getDate()
-  3. Pad with leading zeros:
-     - month: String(month).padStart(2, '0')
-     - day: String(day).padStart(2, '0')
+  1. Extract date portion from ISO string using regex: /^(\d{4}-\d{2}-\d{2})/
+  2. If match found, return the YYYY-MM-DD part directly
+  3. Fallback: Parse to Date object and convert to ISO, then slice
   4. Format: "YYYY-MM-DD"
 
 Example:
-  Input: new Date("2025-10-20T15:30:00Z")
+  Input: "2025-10-20T15:30:00+08:00"
+  Output: "2025-10-20"
+
+  Input: "2025-10-20T15:30:00Z"
   Output: "2025-10-20"
 
 Benefits:
-  - Consistent across all timezones
+  - Timezone-agnostic (works regardless of server location)
+  - Preserves user's local date from ISO string
   - Sortable lexicographically
   - Database index friendly
 ```
