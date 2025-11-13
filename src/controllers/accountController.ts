@@ -452,6 +452,7 @@ export const getRecommendationForTheDay = async (
     const recommendations = {
       breakfast: [] as Array<{
         name: string;
+        servingSize: string;
         calories: string;
         carbs: string;
         protein: string;
@@ -459,6 +460,7 @@ export const getRecommendationForTheDay = async (
       }>,
       lunch: [] as Array<{
         name: string;
+        servingSize: string;
         calories: string;
         carbs: string;
         protein: string;
@@ -466,6 +468,7 @@ export const getRecommendationForTheDay = async (
       }>,
       dinner: [] as Array<{
         name: string;
+        servingSize: string;
         calories: string;
         carbs: string;
         protein: string;
@@ -473,6 +476,7 @@ export const getRecommendationForTheDay = async (
       }>,
       snacks: [] as Array<{
         name: string;
+        servingSize: string;
         calories: string;
         carbs: string;
         protein: string;
@@ -688,6 +692,7 @@ export const getRecommendationForTheDay = async (
         // Create food data object with macros
         const foodData = {
           name: food.name,
+          servingSize: food.serving_size || "N/A",
           calories: `${foodCalories}kcal`,
           carbs: `${foodCarbs}g`,
           protein: `${foodProtein}g`,

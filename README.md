@@ -654,6 +654,7 @@ Field: profilePicture (file)
     "breakfast": [
       {
         "name": "Pancit Canton",
+        "servingSize": "1 cup",
         "calories": "320kcal",
         "carbs": "45g",
         "protein": "12g",
@@ -661,6 +662,7 @@ Field: profilePicture (file)
       },
       {
         "name": "Tapsilog",
+        "servingSize": "1 serving",
         "calories": "450kcal",
         "carbs": "52g",
         "protein": "25g",
@@ -670,6 +672,7 @@ Field: profilePicture (file)
     "lunch": [
       {
         "name": "Chicken Adobo",
+        "servingSize": "1 cup",
         "calories": "380kcal",
         "carbs": "28g",
         "protein": "32g",
@@ -677,6 +680,7 @@ Field: profilePicture (file)
       },
       {
         "name": "Sinigang na Baboy",
+        "servingSize": "1 bowl",
         "calories": "290kcal",
         "carbs": "22g",
         "protein": "24g",
@@ -686,6 +690,7 @@ Field: profilePicture (file)
     "dinner": [
       {
         "name": "Lechon Kawali",
+        "servingSize": "100g",
         "calories": "410kcal",
         "carbs": "18g",
         "protein": "28g",
@@ -693,6 +698,7 @@ Field: profilePicture (file)
       },
       {
         "name": "Pinakbet",
+        "servingSize": "1 cup",
         "calories": "180kcal",
         "carbs": "22g",
         "protein": "8g",

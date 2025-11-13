@@ -1708,10 +1708,10 @@ Steps:
 Output: {
   message: string,
   recommendations: {
-    breakfast: Array<{name, calories, carbs, protein, fat}>,
-    lunch: Array<{name, calories, carbs, protein, fat}>,
-    dinner: Array<{name, calories, carbs, protein, fat}>,
-    snacks: Array<{name, calories, carbs, protein, fat}>
+    breakfast: Array<{name, servingSize, calories, carbs, protein, fat}>,
+    lunch: Array<{name, servingSize, calories, carbs, protein, fat}>,
+    dinner: Array<{name, servingSize, calories, carbs, protein, fat}>,
+    snacks: Array<{name, servingSize, calories, carbs, protein, fat}>
   },
   mealDistribution: {
     breakfast: "25%",
@@ -1751,19 +1751,19 @@ Response:
     "message": "Daily recommendations retrieved",
     "recommendations": {
       "breakfast": [
-        { "name": "Tapsilog", "calories": "450kcal", "carbs": "52g", "protein": "25g", "fat": "15g" },
-        { "name": "Chicken Adobo", "calories": "380kcal", "carbs": "28g", "protein": "32g", "fat": "18g" }
+        { "name": "Tapsilog", "servingSize": "1 serving", "calories": "450kcal", "carbs": "52g", "protein": "25g", "fat": "15g" },
+        { "name": "Chicken Adobo", "servingSize": "1 cup", "calories": "380kcal", "carbs": "28g", "protein": "32g", "fat": "18g" }
       ],
       "lunch": [
-        { "name": "Beef Kaldereta", "calories": "420kcal", "carbs": "35g", "protein": "38g", "fat": "16g" },
-        { "name": "Lechon Kawali", "calories": "410kcal", "carbs": "18g", "protein": "28g", "fat": "26g" }
+        { "name": "Beef Kaldereta", "servingSize": "1 cup", "calories": "420kcal", "carbs": "35g", "protein": "38g", "fat": "16g" },
+        { "name": "Lechon Kawali", "servingSize": "100g", "calories": "410kcal", "carbs": "18g", "protein": "28g", "fat": "26g" }
       ],
       "dinner": [
-        { "name": "Chicken Tinola", "calories": "290kcal", "carbs": "22g", "protein": "24g", "fat": "12g" },
-        { "name": "Pork Sisig", "calories": "350kcal", "carbs": "15g", "protein": "30g", "fat": "20g" }
+        { "name": "Chicken Tinola", "servingSize": "1 bowl", "calories": "290kcal", "carbs": "22g", "protein": "24g", "fat": "12g" },
+        { "name": "Pork Sisig", "servingSize": "1 serving", "calories": "350kcal", "carbs": "15g", "protein": "30g", "fat": "20g" }
       ],
       "snacks": [
-        { "name": "Boiled Egg", "calories": "70kcal", "carbs": "1g", "protein": "6g", "fat": "5g" }
+        { "name": "Boiled Egg", "servingSize": "1 large", "calories": "70kcal", "carbs": "1g", "protein": "6g", "fat": "5g" }
       ]
     },
     "mealDistribution": {
@@ -1829,7 +1829,7 @@ Filtered Results: O(n)
 
 Response Object: O(1)
   - Fixed at 40 foods maximum (10 per meal type)
-  - Each food object: {name, calories, carbs, protein, fat}
+  - Each food object: {name, servingSize, calories, carbs, protein, fat}
   - ~200-400 bytes per food object
   - Total response: ~8-16 KB
 
