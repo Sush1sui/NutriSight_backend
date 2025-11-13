@@ -489,6 +489,12 @@ export const getRecommendationForTheDay = async (
       // Query foods from database
       const foods = await FoodModel.find({}).lean();
 
+      console.log("=== RECOMMENDATION DEBUG ===");
+      console.log(`Total foods: ${foods.length}`);
+      console.log(`User allergens: ${JSON.stringify(userAllergens)}`);
+      console.log(`Daily recommendation:`, dailyRecommendation);
+      console.log(`Meal targets:`, JSON.stringify(mealTargets, null, 2));
+
       // Helper function to check if food matches meal target
       const matchesMealTarget = (
         foodCalories: number,
@@ -511,9 +517,22 @@ export const getRecommendationForTheDay = async (
       };
 
       // Filter foods for each meal type
+      let allergensSkipped = 0;
+      let noMacrosSkipped = 0;
+      let lunchCandidates = 0;
+      let lunchMatched = 0;
+
       for (const food of foods) {
         // Check for allergen conflicts using comprehensive mapping
         if (hasAllergen(food.common_ingredients, userAllergens)) {
+          allergensSkipped++;
+          if (allergensSkipped <= 3) {
+            console.log(
+              `[ALLERGEN] Skipped "${
+                food.name
+              }" - ingredients: ${JSON.stringify(food.common_ingredients)}`
+            );
+          }
           continue; // Skip foods with allergens
         }
 
@@ -537,7 +556,34 @@ export const getRecommendationForTheDay = async (
           foodProtein === 0 &&
           foodFat === 0
         ) {
+          noMacrosSkipped++;
           continue;
+        }
+
+        // Log first 3 foods that pass allergen check for lunch analysis
+        lunchCandidates++;
+        if (lunchCandidates <= 3) {
+          console.log(`[FOOD ${lunchCandidates}] "${food.name}"`);
+          console.log(
+            `  Macros: cal=${foodCalories}, carbs=${foodCarbs}, protein=${foodProtein}, fat=${foodFat}`
+          );
+          console.log(
+            `  Lunch target: cal=${mealTargets.lunch.calories}, carbs=${mealTargets.lunch.carbs}, protein=${mealTargets.lunch.protein}, fat=${mealTargets.lunch.fat}`
+          );
+          console.log(
+            `  Lunch range: cal=${mealTargets.lunch.calories * 0.5}-${
+              mealTargets.lunch.calories * 1.5
+            }`
+          );
+
+          const lunchMatch = matchesMealTarget(
+            foodCalories,
+            foodCarbs,
+            foodProtein,
+            foodFat,
+            mealTargets.lunch
+          );
+          console.log(`  Matches lunch? ${lunchMatch}`);
         }
 
         // Check which meal types this food matches
@@ -563,6 +609,10 @@ export const getRecommendationForTheDay = async (
           )
         ) {
           recommendations.lunch.push(food.name);
+          lunchMatched++;
+          if (lunchMatched <= 3) {
+            console.log(`[LUNCH MATCH] "${food.name}"`);
+          }
         }
 
         if (
@@ -589,6 +639,15 @@ export const getRecommendationForTheDay = async (
           recommendations.snacks.push(food.name);
         }
       }
+
+      console.log(`\n=== SUMMARY ===`);
+      console.log(`Allergens skipped: ${allergensSkipped}`);
+      console.log(`No macros skipped: ${noMacrosSkipped}`);
+      console.log(`Foods checked for lunch: ${lunchCandidates}`);
+      console.log(`Lunch matches: ${lunchMatched}`);
+      console.log(
+        `Final counts - B:${recommendations.breakfast.length}, L:${recommendations.lunch.length}, D:${recommendations.dinner.length}, S:${recommendations.snacks.length}`
+      );
 
       // Limit recommendations per meal to avoid overwhelming response
       recommendations.breakfast = recommendations.breakfast.slice(0, 10);
