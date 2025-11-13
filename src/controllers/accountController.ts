@@ -488,6 +488,11 @@ export const getRecommendationForTheDay = async (
 
       // Query foods from database
       const foods = await FoodModel.find({}).lean();
+      console.log(`[RECOMMEND] Total foods in database: ${foods.length}`);
+      console.log(
+        `[RECOMMEND] User allergens: ${JSON.stringify(userAllergens)}`
+      );
+      console.log(`[RECOMMEND] Meal targets:`, mealTargets);
 
       // Helper function to check if food matches meal target
       const matchesMealTarget = (
@@ -511,9 +516,14 @@ export const getRecommendationForTheDay = async (
       };
 
       // Filter foods for each meal type
+      let allergensSkipped = 0;
+      let noMacrosSkipped = 0;
+      let matched = 0;
+
       for (const food of foods) {
         // Check for allergen conflicts using comprehensive mapping
         if (hasAllergen(food.common_ingredients, userAllergens)) {
+          allergensSkipped++;
           continue; // Skip foods with allergens
         }
 
@@ -530,7 +540,20 @@ export const getRecommendationForTheDay = async (
         const foodProtein = getNutritionValue("protein");
         const foodFat = getNutritionValue("fat");
 
+        // Skip foods with no macro data
+        if (
+          foodCalories === 0 &&
+          foodCarbs === 0 &&
+          foodProtein === 0 &&
+          foodFat === 0
+        ) {
+          noMacrosSkipped++;
+          continue;
+        }
+
         // Check which meal types this food matches
+        let foodMatched = false;
+
         if (
           matchesMealTarget(
             foodCalories,
@@ -541,6 +564,7 @@ export const getRecommendationForTheDay = async (
           )
         ) {
           recommendations.breakfast.push(food.name);
+          foodMatched = true;
         }
 
         if (
@@ -553,6 +577,7 @@ export const getRecommendationForTheDay = async (
           )
         ) {
           recommendations.lunch.push(food.name);
+          foodMatched = true;
         }
 
         if (
@@ -565,6 +590,7 @@ export const getRecommendationForTheDay = async (
           )
         ) {
           recommendations.dinner.push(food.name);
+          foodMatched = true;
         }
 
         if (
@@ -577,8 +603,18 @@ export const getRecommendationForTheDay = async (
           )
         ) {
           recommendations.snacks.push(food.name);
+          foodMatched = true;
         }
+
+        if (foodMatched) matched++;
       }
+
+      console.log(`[RECOMMEND] Foods skipped (allergens): ${allergensSkipped}`);
+      console.log(`[RECOMMEND] Foods skipped (no macros): ${noMacrosSkipped}`);
+      console.log(`[RECOMMEND] Foods matched: ${matched}`);
+      console.log(
+        `[RECOMMEND] Results - B:${recommendations.breakfast.length}, L:${recommendations.lunch.length}, D:${recommendations.dinner.length}, S:${recommendations.snacks.length}`
+      );
 
       // Limit recommendations per meal to avoid overwhelming response
       recommendations.breakfast = recommendations.breakfast.slice(0, 10);
