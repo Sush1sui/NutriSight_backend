@@ -1741,7 +1741,7 @@ Calorie Ranges:
   breakfast: 100-500 cal
   lunch: 150-600 cal
   dinner: 150-550 cal
-  snacks: 50-250 cal
+  snacks: 50-150 cal
 
 Macro Filter Applied:
   highProtein: true (>30% calories from protein)

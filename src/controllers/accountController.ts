@@ -608,8 +608,8 @@ export const getRecommendationForTheDay = async (
             return foodCalories >= 150 && foodCalories <= 550;
 
           case "snacks":
-            // Light: 50-250 cal
-            return foodCalories >= 50 && foodCalories <= 250;
+            // Light: 50-150 cal
+            return foodCalories >= 50 && foodCalories <= 150;
 
           default:
             return false;
