@@ -651,10 +651,70 @@ Field: profilePicture (file)
 {
   "message": "Daily recommendations retrieved",
   "recommendations": {
-    "breakfast": ["Pancit Canton", "Tapsilog", "Longganisa"],
-    "lunch": ["Chicken Adobo", "Sinigang na Baboy", "Kare-kare"],
-    "dinner": ["Lechon Kawali", "Pinakbet", "Bicol Express"],
-    "snacks": ["Turon", "Banana Cue", "Lumpia Shanghai"]
+    "breakfast": [
+      {
+        "name": "Pancit Canton",
+        "calories": "320kcal",
+        "carbs": "45g",
+        "protein": "12g",
+        "fat": "8g"
+      },
+      {
+        "name": "Tapsilog",
+        "calories": "450kcal",
+        "carbs": "52g",
+        "protein": "25g",
+        "fat": "15g"
+      }
+    ],
+    "lunch": [
+      {
+        "name": "Chicken Adobo",
+        "calories": "380kcal",
+        "carbs": "28g",
+        "protein": "32g",
+        "fat": "18g"
+      },
+      {
+        "name": "Sinigang na Baboy",
+        "calories": "290kcal",
+        "carbs": "22g",
+        "protein": "24g",
+        "fat": "12g"
+      }
+    ],
+    "dinner": [
+      {
+        "name": "Lechon Kawali",
+        "calories": "410kcal",
+        "carbs": "18g",
+        "protein": "28g",
+        "fat": "26g"
+      },
+      {
+        "name": "Pinakbet",
+        "calories": "180kcal",
+        "carbs": "22g",
+        "protein": "8g",
+        "fat": "7g"
+      }
+    ],
+    "snacks": [
+      {
+        "name": "Turon",
+        "calories": "150kcal",
+        "carbs": "28g",
+        "protein": "2g",
+        "fat": "4g"
+      },
+      {
+        "name": "Banana Cue",
+        "calories": "180kcal",
+        "carbs": "35g",
+        "protein": "2g",
+        "fat": "5g"
+      }
+    ]
   },
   "mealDistribution": {
     "breakfast": "25%",

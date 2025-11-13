@@ -450,10 +450,34 @@ export const getRecommendationForTheDay = async (
     };
 
     const recommendations = {
-      breakfast: [] as string[],
-      lunch: [] as string[],
-      dinner: [] as string[],
-      snacks: [] as string[],
+      breakfast: [] as Array<{
+        name: string;
+        calories: string;
+        carbs: string;
+        protein: string;
+        fat: string;
+      }>,
+      lunch: [] as Array<{
+        name: string;
+        calories: string;
+        carbs: string;
+        protein: string;
+        fat: string;
+      }>,
+      dinner: [] as Array<{
+        name: string;
+        calories: string;
+        carbs: string;
+        protein: string;
+        fat: string;
+      }>,
+      snacks: [] as Array<{
+        name: string;
+        calories: string;
+        carbs: string;
+        protein: string;
+        fat: string;
+      }>,
     };
 
     // Get user's daily macro recommendations and allergens
@@ -661,13 +685,22 @@ export const getRecommendationForTheDay = async (
           continue;
         }
 
+        // Create food data object with macros
+        const foodData = {
+          name: food.name,
+          calories: `${foodCalories}kcal`,
+          carbs: `${foodCarbs}g`,
+          protein: `${foodProtein}g`,
+          fat: `${foodFat}g`,
+        };
+
         // Check which meal types this food is suitable for
         if (isSuitableForMeal(foodCalories, foodProtein, "breakfast")) {
-          recommendations.breakfast.push(food.name);
+          recommendations.breakfast.push(foodData);
         }
 
         if (isSuitableForMeal(foodCalories, foodProtein, "lunch")) {
-          recommendations.lunch.push(food.name);
+          recommendations.lunch.push(foodData);
           lunchMatched++;
           if (lunchMatched <= 3) {
             console.log(`[LUNCH MATCH] "${food.name}"`);
@@ -675,11 +708,11 @@ export const getRecommendationForTheDay = async (
         }
 
         if (isSuitableForMeal(foodCalories, foodProtein, "dinner")) {
-          recommendations.dinner.push(food.name);
+          recommendations.dinner.push(foodData);
         }
 
         if (isSuitableForMeal(foodCalories, foodProtein, "snacks")) {
-          recommendations.snacks.push(food.name);
+          recommendations.snacks.push(foodData);
         }
       }
 
