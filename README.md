@@ -36,7 +36,8 @@ A comprehensive nutrition tracking and food recognition API built with Node.js, 
 
 ### 🔬 Nutritional Intelligence
 
-- **Allergen Detection**: AI-powered ingredient analysis with user-specific allergen matching
+- **Dual-Layer Allergen Detection**: AI-powered ingredient analysis (Gemini AI) + comprehensive local keyword mapping (1,100+ variations) for maximum safety
+- **Smart Food Recommendations**: Personalized daily meal suggestions based on macro targets and allergen profiles
 - **Nutrition Grouping**: Automatic categorization into macronutrients, micronutrients, and other nutrients
 - **Unit Normalization**: Smart conversion of all measurements to standardized grams/kcal
 - **Multi-API Nutrition Data**: Seamless integration with USDA FoodData Central, Nutritionix, Open Food Facts, and Gemini AI
@@ -636,6 +637,46 @@ Field: profilePicture (file)
 }
 ```
 
+**GET** `/account/recommend-foods`
+
+```json
+// Response
+{
+  "message": "Daily recommendations retrieved",
+  "recommendations": [
+    {
+      "name": "Chicken Adobo",
+      "servingSize": "150g",
+      "nutrition": [
+        { "name": "calories", "value": 250, "unit": "kcal" },
+        { "name": "protein", "value": 20, "unit": "g" },
+        { "name": "carbohydrates", "value": 15, "unit": "g" },
+        { "name": "fat", "value": 12, "unit": "g" }
+      ],
+      "source": "database",
+      "ingredients": ["chicken", "soy sauce", "vinegar", "garlic"]
+    }
+  ]
+}
+```
+
+_Note: Returns foods from local database that match user's daily macro recommendations (50-150% of target per meal) and exclude allergens. Returns empty array if no matches found._
+
+**GET** `/camera/food-classes`
+
+```json
+// Response
+{
+  "message": "Food classes retrieved successfully",
+  "foodClasses": [
+    "adobo",
+    "sinigang",
+    "lechon"
+    // ... 127 more Filipino food dishes
+  ]
+}
+```
+
 ### Response Status Codes
 
 - `200` - Success
@@ -780,14 +821,14 @@ See [DATABASE_ERD.md](./DATABASE_ERD.md) for detailed relationships and ER diagr
 
 ## 🧮 Algorithms
 
-NutriSight implements 16 sophisticated algorithms for food recognition, nutrition analysis, and data processing:
+NutriSight implements 18 sophisticated algorithms for food recognition, nutrition analysis, and data processing:
 
 ### 🔴 Core Algorithms (Critical for Thesis)
 
 1. **CNN Image Classification** - Softmax with top-K selection for Filipino food recognition
    - _Priority: CRITICAL - Core thesis topic, CNN model implementation_
-2. **Allergen Detection** - LLM-based pattern matching with semantic validation
-   - _Priority: CRITICAL - Key safety feature, AI-powered analysis_
+2. **Dual-Layer Allergen Detection** - AI (Gemini) + Local Keyword Mapping (1,100+ variations) for comprehensive allergen safety
+   - _Priority: CRITICAL - Key safety feature, AI-powered + deterministic validation_
 3. **Nutrition Normalization** - Priority-based consolidation with map deduplication
    - _Priority: CRITICAL - Essential for data accuracy and consistency_
 4. **API Fallback Cascade** - Waterfall pattern for high availability
@@ -810,8 +851,8 @@ NutriSight implements 16 sophisticated algorithms for food recognition, nutritio
 
 10. **Session Population** - Lazy loading with parallel data hydration
     - _Priority: MEDIUM - Performance optimization technique_
-11. **Date String Normalization** - ISO 8601 normalization with zero-padding
-    - _Priority: MEDIUM - Timezone handling (server-agnostic)_
+11. **Date String Normalization** - ISO 8601 normalization with zero-padding (server-agnostic)
+    - _Priority: MEDIUM - Timezone handling for global deployment_
 
 ### ⚪ Utility Algorithms (Optional for Thesis)
 
@@ -831,7 +872,7 @@ NutriSight implements 16 sophisticated algorithms for food recognition, nutritio
 **Must Include (4 algorithms):**
 
 - CNN Image Classification (your main contribution)
-- Allergen Detection (AI safety feature)
+- Dual-Layer Allergen Detection (AI + local mapping safety feature)
 - Nutrition Normalization (data accuracy)
 - API Fallback Cascade (system reliability)
 
@@ -844,6 +885,10 @@ NutriSight implements 16 sophisticated algorithms for food recognition, nutritio
 - Meal Entry Deduplication (storage optimization)
 
 **Optional (remaining 7):** Include based on page limits and focus areas
+
+- Session Population, Date String Normalization (performance & timezone)
+- Nutritionix Mapping, Ingredient Extraction/Cleaning (utilities)
+- Rate Limiting algorithms (security details)
 
 See [ALGORITHMS_DOCUMENTATION.md](./ALGORITHMS_DOCUMENTATION.md) for detailed algorithm specifications, time complexity analysis, and implementation details.
 

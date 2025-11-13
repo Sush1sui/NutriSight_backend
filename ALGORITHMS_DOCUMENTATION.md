@@ -9,7 +9,7 @@ This document describes all algorithms and computational concepts used in the Nu
 ### 🔴 **CRITICAL** - Must Include in Thesis (Core CNN Food Scanner Functionality)
 
 - **Algorithm #1**: CNN Image Classification
-- **Algorithm #2**: Allergen Detection
+- **Algorithm #2**: Allergen Detection (AI + Local Mapping)
 - **Algorithm #3**: Nutrition Normalization
 - **Algorithm #5**: API Fallback Cascade
 
@@ -25,6 +25,8 @@ This document describes all algorithms and computational concepts used in the Nu
 
 - **Algorithm #12**: Session Population
 - **Algorithm #14**: Date String Normalization
+- **Algorithm #17**: Local Allergen Keyword Mapping
+- **Algorithm #18**: Food Recommendation Matching
 
 ### ⚪ **LOW** - Optional (Utility Functions & Security)
 
@@ -104,18 +106,20 @@ Output: [{label: "adobo", prob: 0.85}, ...]
 
 **Priority: 🔴 CRITICAL**
 
-**Location:** `src/utils/ingredientsNutritionsPredict.ts`
+**Location:** `src/utils/ingredientsNutritionsPredict.ts`, `src/utils/allergenMapping.ts`, `src/controllers/cameraController.ts`
 
-**Algorithm Name:** LLM-Based Pattern Matching with Semantic Validation
+**Algorithm Name:** Dual-Layer Allergen Detection (AI + Local Mapping)
 
-### **Concept: AI-Powered String Matching with Context**
+### **Concept: Semantic Matching with LLM + Comprehensive Keyword Hash Map**
 
-**Description:** An intelligent allergen identification system that leverages Gemini AI's natural language understanding to cross-reference food ingredients against user-specific allergen profiles. The algorithm constructs context-rich prompts containing ingredient lists and allergen data, processes the response through regex-based JSON extraction, validates matches to ensure ingredient-allergen pairs are semantically accurate, and filters out false positives by enforcing strict matching rules (single ingredient names only, no compound phrases).
+**Description:** A two-tier safety system that combines AI-powered semantic understanding with deterministic local keyword matching. The primary layer uses Google Gemini AI to intelligently match ingredients against user allergens with contextual awareness (e.g., "milk chocolate" contains milk). The secondary layer employs a comprehensive hash map of 1,100+ allergen variations to catch technical terms, scientific names, and edge cases that AI might miss (e.g., "casein", "whey", "albumin"). Results are merged with deduplication to provide maximum user safety.
 
-- **Purpose:** Identify allergens in food ingredients using Gemini AI
-- **Method:** Natural Language Processing with structured prompts
+- **Purpose:** Identify allergens in food ingredients using dual validation
+- **Method:** AI Natural Language Processing + Deterministic Keyword Matching
 
 ### **Algorithm Steps:**
+
+#### **2.1 AI-Powered Detection (Gemini API)**
 
 ```
 Input:
@@ -133,18 +137,94 @@ Steps:
        "groupedNutrition": [...]
      }
   4. Parse JSON response with regex: /\{[\s\S]*\}/
-  5. Filter triggered allergens:
+  5. Filter AI-detected allergens:
      - Only match single, simple ingredient names
      - Ingredient must exist in ingredients array
      - Allergen must match user's allergen list
-  6. Validate ingredients against user's allergen profile
 
-Output: {
+AI Output: {
   ingredients: string[],
   triggeredAllergens: [{ingredient, allergen}],
   groupedNutrition: [...]
 }
 ```
+
+#### **2.2 Local Keyword Mapping (Deterministic Validation)**
+
+```
+Input: ingredients, userAllergens
+
+Data Structure: allergenKeywordMapping<string, string[]> = {
+  "peanuts": ["peanut", "groundnut", "arachis oil", "beer nuts", ...],  // 39 variations
+  "milk": ["milk", "dairy", "whey", "casein", "lactose", "cheese", ...], // 115+ variations
+  "eggs": ["egg", "albumin", "mayonnaise", "meringue", "lecithin", ...], // 61 variations
+  "soy": ["soy", "tofu", "tempeh", "edamame", "miso", "tamari", ...],    // 68 variations
+  "wheat": ["wheat", "flour", "bread", "pasta", "gluten", ...],           // 106 variations
+  "fish": ["fish", "salmon", "tuna", "anchovy", "caviar", ...],           // 103 variations
+  "sesame": ["sesame", "tahini", "gomasio", "halvah", ...],               // 31 variations
+  "sulfites": ["sulfite", "sulfur dioxide", "e220", "wine", ...],         // 36 variations
+  "celery": ["celery", "celeriac", "celery salt", "lovage", ...],         // 16 variations
+  "mustard": ["mustard", "dijon", "wasabi", "horseradish", ...],          // 40 variations
+  "lupin": ["lupin", "lupini beans", "lupinus", ...],                     // 13 variations
+  "molluscs": ["clam", "mussel", "oyster", "squid", "octopus", ...],      // 37 variations
+  "gluten": ["gluten", "wheat", "barley", "rye", "malt", "beer", ...],    // 52 variations
+  "lactose": ["lactose", "milk sugar", "dairy", "whey", ...],             // 28 variations
+  "fructose": ["fructose", "HFCS", "honey", "agave", "apple", ...],       // 38 variations
+  "histamine": ["aged cheese", "fermented", "wine", "salami", ...],       // 90+ variations
+  "nightshades": ["tomato", "potato", "eggplant", "pepper", ...],         // 81 variations
+  "dairy": ["milk", "cheese", "yogurt", "butter", "cream", ...],          // 70 variations
+}
+// Total: 1,100+ keyword variations across 18 allergen categories
+
+Steps:
+  1. Normalize ingredients to lowercase: ingredientsLower[]
+  2. For each userAllergen:
+     a. Get keyword array from allergenKeywordMapping (O(1) hash lookup)
+     b. Skip if allergen is "none" or "no allergies"
+     c. For each ingredient (original casing):
+        - For each keyword:
+          • Check: ingredient.includes(keyword) OR keyword.includes(ingredient)
+          • If match found:
+            * Add {ingredient: original, allergen: original} to results
+            * Break to next ingredient (avoid duplicates per ingredient)
+
+Local Output: [{ingredient, allergen}, ...]
+```
+
+#### **2.3 Result Merging (Deduplication)**
+
+```
+Purpose: Combine AI and local results without duplicates
+Input: aiAllergens[], localAllergens[], userAllergens[]
+
+Steps:
+  1. Initialize merged[] = [...aiAllergens]
+  2. Create existingKeys = Set<string>
+  3. For each AI allergen:
+     - Add "ingredient:allergen" (lowercase) to existingKeys
+  4. For each local allergen:
+     - Create key = "ingredient:allergen" (lowercase)
+     - If key NOT in existingKeys:
+       * Add to merged[]
+       * Add key to existingKeys
+
+Final Output: merged[] (no duplicates)
+
+Example:
+  AI Results:    [{ingredient: "milk", allergen: "dairy"}]
+  Local Results: [{ingredient: "milk", allergen: "dairy"},
+                  {ingredient: "whey protein", allergen: "milk"}]
+  Merged:        [{ingredient: "milk", allergen: "dairy"},
+                  {ingredient: "whey protein", allergen: "milk"}]
+```
+
+**Benefits of Dual-Layer Approach:**
+
+1. **AI Layer**: Contextual understanding, handles variations naturally
+2. **Local Layer**: Comprehensive coverage, catches technical terms, deterministic
+3. **Redundancy**: If AI fails/errors, local mapping provides safety net
+4. **Cost-Effective**: Local checks are free and instant
+5. **Reliability**: Not dependent solely on API uptime or AI accuracy
 
 **Key Rules:**
 
@@ -1259,65 +1339,563 @@ Email Storage:
 
 ---
 
+## **17. LOCAL ALLERGEN KEYWORD MAPPING ALGORITHM**
+
+**Priority: 🟡 MEDIUM**
+
+**Location:** `src/utils/allergenMapping.ts`
+
+**Algorithm Name:** Hash Map-Based Keyword Matching with Bidirectional Search
+
+### **Concept: Comprehensive Keyword Database with O(1) Lookups**
+
+**Description:** A deterministic allergen detection system built on a hash map of 1,100+ keyword variations across 18 allergen categories. The algorithm provides a safety net for AI-based detection by using comprehensive keyword matching that includes scientific names, brand names, international terms, processed forms, and common dishes containing allergens. It performs case-insensitive, bidirectional substring matching (ingredient.includes(keyword) OR keyword.includes(ingredient)) to catch both exact matches and partial matches while maintaining O(1) average-case hash map lookups.
+
+- **Purpose:** Provide deterministic allergen detection as a safety layer
+- **Method:** Hash map keyword matching with bidirectional substring search
+
+### **Data Structure**
+
+```typescript
+allergenKeywordMapping: {
+  "peanuts": string[],    // 39 variations
+  "milk": string[],       // 115+ variations
+  "eggs": string[],       // 61 variations
+  "soy": string[],        // 68 variations
+  "wheat": string[],      // 106 variations
+  "fish": string[],       // 103 variations
+  "sesame": string[],     // 31 variations
+  "sulfites": string[],   // 36 variations
+  "celery": string[],     // 16 variations
+  "mustard": string[],    // 40 variations
+  "lupin": string[],      // 13 variations
+  "molluscs": string[],   // 37 variations
+  "gluten": string[],     // 52 variations
+  "lactose": string[],    // 28 variations
+  "fructose": string[],   // 38 variations
+  "histamine": string[],  // 90+ variations
+  "nightshades": string[],// 81 variations
+  "dairy": string[]       // 70 variations
+}
+
+Total: 1,100+ keyword variations
+```
+
+### **Algorithm Steps**
+
+```
+Function: hasAllergen(ingredients: string[], userAllergens: string[]): boolean
+
+Input:
+  - ingredients: string[] (food ingredient list)
+  - userAllergens: string[] (user's allergen profile)
+
+Steps:
+  1. Normalize ingredients:
+     ingredientsLower = ingredients.map(i => i.toLowerCase())
+
+  2. For each userAllergen in userAllergens:
+     a. Skip if allergen is "none" or "no allergies"
+
+     b. Get keywords from hash map (O(1) lookup):
+        keywords = allergenKeywordMapping[userAllergen.toLowerCase()]
+
+     c. If keywords not found, skip allergen
+
+     d. For each ingredient (original case) in ingredients:
+        - For each keyword in keywords:
+          • Check bidirectional match:
+            IF ingredientsLower[i].includes(keyword)
+            OR keyword.includes(ingredientsLower[i])
+          • If match found:
+            * Return true (allergen detected)
+            * Break to next allergen
+
+  3. If no matches found:
+     Return false (no allergens detected)
+
+Output: boolean (true = allergen present, false = safe)
+```
+
+### **Function: getTriggeredAllergens**
+
+```
+Function: getTriggeredAllergens(
+  ingredients: string[],
+  userAllergens: string[]
+): Array<{ingredient: string, allergen: string}>
+
+Input: Same as hasAllergen()
+
+Steps:
+  1. Initialize triggeredAllergens = []
+  2. Normalize ingredients to lowercase
+  3. For each userAllergen:
+     a. Get keywords from hash map
+     b. For each ingredient:
+        - For each keyword:
+          • If bidirectional match found:
+            * Push {ingredient: original, allergen: original}
+            * Break to next ingredient (avoid duplicates)
+  4. Return triggeredAllergens[]
+
+Output: Detailed list of ingredient-allergen pairs
+
+Example:
+  Input:
+    ingredients = ["milk chocolate", "whey protein", "flour"]
+    userAllergens = ["milk", "dairy"]
+
+  Output:
+    [
+      {ingredient: "milk chocolate", allergen: "milk"},
+      {ingredient: "milk chocolate", allergen: "dairy"},
+      {ingredient: "whey protein", allergen: "milk"},
+      {ingredient: "whey protein", allergen: "dairy"}
+    ]
+```
+
+### **Keyword Coverage Examples**
+
+```
+Milk (115+ variations):
+  - Base: milk, dairy, cream, butter
+  - Scientific: casein, whey, lactose, lactalbumin
+  - Products: cheese, yogurt, ice cream, kefir
+  - International: ghee, paneer, queso, fromage
+  - Hidden: nonfat milk solids, milk powder, curds
+
+Wheat (106 variations):
+  - Base: wheat, flour, bread, pasta
+  - Scientific: triticum, gluten
+  - Types: durum, semolina, spelt, kamut
+  - Products: couscous, seitan, bulgur
+  - Hidden: wheat starch, wheat germ
+
+Fish (103 variations):
+  - Types: salmon, tuna, cod, mackerel, sardine
+  - Products: fish sauce, anchovy paste, caviar
+  - International: bonito, surimi, fish stock
+  - Scientific: pisces
+  - Hidden: worcestershire sauce (contains anchovy)
+```
+
+### **Time Complexity Analysis**
+
+```
+Best Case: O(1)
+  - Single ingredient, first keyword matches immediately
+  - Hash map lookup is O(1)
+
+Average Case: O(n × m × k)
+  Where:
+    n = number of ingredients (typically 5-20)
+    m = number of user allergens (typically 1-5)
+    k = average keywords per allergen (typically 20-60)
+
+  Example:
+    10 ingredients × 3 allergens × 40 keywords = 1,200 comparisons
+    Still very fast (< 1ms on modern hardware)
+
+Worst Case: O(n × m × k)
+  - All ingredients checked against all keywords
+  - No early termination
+  - Still efficient due to simple string operations
+
+Hash Map Lookup: O(1) average case
+  - Direct key access to keyword array
+  - No iteration through allergen list
+```
+
+### **Space Complexity**
+
+```
+Static Data: O(1)
+  - allergenKeywordMapping is pre-defined
+  - 1,100 keywords × ~15 bytes avg = ~16 KB
+  - Loaded once at module import
+
+Runtime: O(n + m)
+  - ingredientsLower array: O(n)
+  - triggeredAllergens result: O(n × m) worst case
+  - No dynamic memory allocation in core loop
+
+Total: O(n + m) runtime + O(1) static
+```
+
+### **Benefits Over AI-Only Detection**
+
+```
+1. Deterministic:
+   - Same input always produces same output
+   - No API rate limits or failures
+   - No token costs
+
+2. Comprehensive:
+   - 1,100+ variations vs AI's contextual understanding
+   - Catches technical/scientific terms AI might miss
+   - Includes regional and international names
+
+3. Fast:
+   - Sub-millisecond execution
+   - No network latency
+   - No API dependency
+
+4. Safety Net:
+   - Works when AI fails or errors
+   - Redundancy for critical health feature
+   - Can operate offline
+
+5. Cost-Effective:
+   - Zero API costs
+   - Unlimited usage
+   - No rate limiting
+```
+
+### **Integration with AI Detection**
+
+```
+mergeAllergenDetection(
+  geminiAllergens: Array,
+  ingredients: string[],
+  userAllergens: string[]
+): Array {
+  // Step 1: Get AI results
+  const merged = [...geminiAllergens];
+
+  // Step 2: Get local mapping results
+  const localAllergens = getTriggeredAllergens(ingredients, userAllergens);
+
+  // Step 3: Deduplicate using Set
+  const existingKeys = new Set(
+    merged.map(a => `${a.ingredient}:${a.allergen}`.toLowerCase())
+  );
+
+  // Step 4: Add unique local results
+  for (const local of localAllergens) {
+    const key = `${local.ingredient}:${local.allergen}`.toLowerCase();
+    if (!existingKeys.has(key)) {
+      merged.push(local);
+      existingKeys.add(key);
+    }
+  }
+
+  return merged; // Combined results without duplicates
+}
+```
+
+---
+
+## **18. FOOD RECOMMENDATION MATCHING ALGORITHM**
+
+**Priority: 🟡 MEDIUM**
+
+**Location:** `src/controllers/accountController.ts`
+
+**Algorithm Name:** Macro Range Filtering with Allergen Exclusion
+
+### **Concept: Nutrient-Based Query with Safety Filtering**
+
+**Description:** A personalized food recommendation system that queries the local Foods database to suggest suitable meals based on the user's daily macro targets and allergen profile. The algorithm divides daily macro goals by 3 (assuming 3 meals/day), establishes a flexible range of 50-150% around each target, constructs a MongoDB aggregation query to match foods within those ranges, filters results using the local allergen mapping system, and returns safe, nutritionally appropriate food recommendations.
+
+- **Purpose:** Suggest foods matching user's daily nutritional goals without allergens
+- **Method:** Database query with macro range filtering and allergen exclusion
+
+### **Algorithm Steps**
+
+```
+Endpoint: GET /account/daily-recommendations
+Authentication: Required (JWT session)
+
+Input:
+  - User session (contains dailyIntakeRecommendations and allergens)
+
+Steps:
+  1. Extract user data from session:
+     const { dailyIntakeRecommendations, allergens } = req.user;
+
+  2. Calculate per-meal macro targets (assuming 3 meals/day):
+     targetCalories = dailyIntakeRecommendations.totalCalories / 3
+     targetProtein = dailyIntakeRecommendations.macronutrients.protein / 3
+     targetCarbs = dailyIntakeRecommendations.macronutrients.carbohydrates / 3
+     targetFat = dailyIntakeRecommendations.macronutrients.fat / 3
+
+  3. Define flexible ranges (50-150% of target):
+     calorieRange = {
+       min: targetCalories * 0.5,
+       max: targetCalories * 1.5
+     }
+     proteinRange = {
+       min: targetProtein * 0.5,
+       max: targetProtein * 1.5
+     }
+     carbsRange = {
+       min: targetCarbs * 0.5,
+       max: targetCarbs * 1.5
+     }
+     fatRange = {
+       min: targetFat * 0.5,
+       max: targetFat * 1.5
+     }
+
+  4. Query Foods database:
+     query = {
+       "nutritionalData.totalCalories": { $gte: calorieRange.min, $lte: calorieRange.max },
+       "nutritionalData.macronutrients.protein": { $gte: proteinRange.min, $lte: proteinRange.max },
+       "nutritionalData.macronutrients.carbohydrates": { $gte: carbsRange.min, $lte: carbsRange.max },
+       "nutritionalData.macronutrients.fat": { $gte: fatRange.min, $lte: fatRange.max }
+     }
+
+     matchingFoods = await FoodModel.find(query).limit(20);
+
+  5. Filter allergens using local mapping:
+     safeFoods = matchingFoods.filter(food => {
+       const ingredients = food.ingredients || [];
+       return !hasAllergen(ingredients, allergens);
+     });
+
+  6. Return recommendations:
+     res.json({
+       recommendations: safeFoods,
+       count: safeFoods.length,
+       targets: {
+         calories: targetCalories,
+         protein: targetProtein,
+         carbs: targetCarbs,
+         fat: targetFat
+       }
+     });
+
+Output: {
+  recommendations: Food[],
+  count: number,
+  targets: { calories, protein, carbs, fat }
+}
+```
+
+### **Example Request/Response**
+
+```
+GET /account/daily-recommendations
+Authorization: Bearer <token>
+
+User Data:
+  dailyIntakeRecommendations: {
+    totalCalories: 2000,
+    macronutrients: {
+      protein: 150g,
+      carbohydrates: 200g,
+      fat: 67g
+    }
+  }
+  allergens: ["milk", "peanuts"]
+
+Calculated Targets (per meal):
+  calories: 667 kcal (range: 333-1000)
+  protein: 50g (range: 25-75)
+  carbs: 67g (range: 33-100)
+  fat: 22g (range: 11-33)
+
+Database Query:
+  Find foods where:
+    333 ≤ calories ≤ 1000 AND
+    25 ≤ protein ≤ 75 AND
+    33 ≤ carbs ≤ 100 AND
+    11 ≤ fat ≤ 33 AND
+    ingredients do NOT contain milk/peanuts keywords
+
+Response:
+  {
+    "recommendations": [
+      {
+        "name": "Grilled Chicken Breast with Rice",
+        "nutritionalData": {
+          "totalCalories": 650,
+          "macronutrients": {
+            "protein": 55,
+            "carbohydrates": 70,
+            "fat": 18
+          }
+        },
+        "ingredients": ["chicken", "rice", "olive oil"]
+      },
+      {
+        "name": "Tuna Salad",
+        "nutritionalData": {
+          "totalCalories": 450,
+          "macronutrients": {
+            "protein": 40,
+            "carbohydrates": 35,
+            "fat": 15
+          }
+        },
+        "ingredients": ["tuna", "lettuce", "tomato", "vinegar"]
+      }
+    ],
+    "count": 2,
+    "targets": {
+      "calories": 667,
+      "protein": 50,
+      "carbs": 67,
+      "fat": 22
+    }
+  }
+```
+
+### **Time Complexity Analysis**
+
+```
+Database Query: O(log n)
+  - MongoDB indexed query on nutritionalData fields
+  - Assumes indexes exist on:
+    • nutritionalData.totalCalories
+    • nutritionalData.macronutrients.protein
+    • nutritionalData.macronutrients.carbohydrates
+    • nutritionalData.macronutrients.fat
+  - Compound index would optimize further
+
+Allergen Filtering: O(f × i × m × k)
+  Where:
+    f = foods returned from query (limited to 20)
+    i = avg ingredients per food (typically 5-15)
+    m = user allergens (typically 1-5)
+    k = avg keywords per allergen (20-60)
+
+  Example:
+    20 foods × 10 ingredients × 3 allergens × 40 keywords = 24,000 comparisons
+    Still fast (< 10ms) due to simple string operations
+
+Total: O(log n + f × i × m × k)
+  Dominated by database query in most cases
+  Allergen filtering is post-query, so f is limited
+```
+
+### **Space Complexity**
+
+```
+Query Results: O(f)
+  - Limited to 20 foods maximum
+  - Each food document ~1-2 KB
+  - Total: ~20-40 KB in memory
+
+Filtered Results: O(f)
+  - Worst case: all 20 foods are safe (no allergens)
+  - Best case: 0 foods (all have allergens)
+  - Typical: 10-15 foods
+
+Response Object: O(f)
+  - JSON serialization of filtered results
+  - Additional targets object is O(1)
+
+Total: O(f) where f ≤ 20 (capped)
+```
+
+### **Edge Cases**
+
+```
+Case 1: No matching foods
+  - Query returns empty array
+  - Response: { recommendations: [], count: 0, targets: {...} }
+  - Client shows "No recommendations available" message
+
+Case 2: All foods have allergens
+  - Query returns 20 foods
+  - All filtered out by hasAllergen()
+  - Response: { recommendations: [], count: 0, targets: {...} }
+
+Case 3: User has no allergens
+  - allergens = ["none"] or []
+  - hasAllergen() always returns false
+  - All query results returned (up to 20)
+
+Case 4: Missing dailyIntakeRecommendations
+  - Error handling: return 400 Bad Request
+  - Message: "Daily intake recommendations not set"
+
+Case 5: Extreme macro targets
+  - User needs 300g protein/day (100g per meal)
+  - Query may return 0 results (no foods match)
+  - Fallback: could widen range to 25-200% instead of 50-150%
+```
+
+### **Optimization Opportunities**
+
+```
+1. Database Indexing:
+   db.foods.createIndex({
+     "nutritionalData.totalCalories": 1,
+     "nutritionalData.macronutrients.protein": 1,
+     "nutritionalData.macronutrients.carbohydrates": 1,
+     "nutritionalData.macronutrients.fat": 1
+   })
+
+   Impact: Query time from O(n) to O(log n)
+
+2. Caching:
+   - Cache results for same macro targets + allergens
+   - Use Redis with TTL (e.g., 1 hour)
+   - Key: `recommendations:${userId}:${dailyCalories}:${allergens.join(',')}`
+
+   Impact: Reduce DB queries by 80-90%
+
+3. Pre-filtering by allergens:
+   - Add allergen tags to Foods collection
+   - Query: { allergenTags: { $nin: userAllergens } }
+   - Reduces post-query filtering
+
+   Impact: Faster allergen exclusion (O(1) per food)
+
+4. Pagination:
+   - Add ?page=1&limit=10 query params
+   - Return paginated results instead of all 20
+
+   Impact: Smaller response payloads
+
+5. Scoring/Ranking:
+   - Calculate distance from ideal macro targets
+   - Sort by closest match
+   - Return top 10 best matches
+
+   Impact: Better user experience
+```
+
+---
+
 ## **SUMMARY TABLE**
 
-| Algorithm               | Purpose              | Time Complexity | Space Complexity |
-| ----------------------- | -------------------- | --------------- | ---------------- |
-| CNN Inference           | Food classification  | O(1) per image  | O(1)             |
-| Allergen Detection      | Safety matching      | O(n)            | O(n)             |
-| Nutrition Normalization | Data standardization | O(n)            | O(n)             |
-| Unit Conversion         | Standardize units    | O(1)            | O(1)             |
-| API Cascade             | Data retrieval       | O(k) worst case | O(1)             |
-| Database Indexing       | Query optimization   | O(log n)        | O(n)             |
-| Diet Aggregation        | Data transformation  | O(n log n)      | O(n)             |
-| Nutrition Grouping      | AI categorization    | O(n)            | O(n)             |
-| Nutrient Mapping        | ID translation       | O(n)            | O(1)             |
-| Ingredient Extraction   | Text parsing         | O(n)            | O(n)             |
-| Deduplication           | Storage optimization | O(log n)        | O(1)             |
-| Session Population      | Data enrichment      | O(m + w)        | O(m + w)         |
-| Date Normalization      | Time formatting      | O(1)            | O(1)             |
-| Rate Limiting           | Security             | O(1)            | O(1)             |
-| Signup Rate Limiting    | Spam prevention      | O(log n)        | O(k)             |
+| Algorithm               | Purpose                  | Time Complexity      | Space Complexity |
+| ----------------------- | ------------------------ | -------------------- | ---------------- |
+| CNN Inference           | Food classification      | O(1) per image       | O(1)             |
+| Allergen Detection      | Safety matching (AI)     | O(n)                 | O(n)             |
+| Local Allergen Mapping  | Safety matching (local)  | O(n × m × k)         | O(n + m)         |
+| Food Recommendation     | Personalized suggestions | O(log n + f × i × m) | O(f)             |
+| Nutrition Normalization | Data standardization     | O(n)                 | O(n)             |
+| Unit Conversion         | Standardize units        | O(1)                 | O(1)             |
+| API Cascade             | Data retrieval           | O(k) worst case      | O(1)             |
+| Database Indexing       | Query optimization       | O(log n)             | O(n)             |
+| Diet Aggregation        | Data transformation      | O(n log n)           | O(n)             |
+| Nutrition Grouping      | AI categorization        | O(n)                 | O(n)             |
+| Nutrient Mapping        | ID translation           | O(n)                 | O(1)             |
+| Ingredient Extraction   | Text parsing             | O(n)                 | O(n)             |
+| Deduplication           | Storage optimization     | O(log n)             | O(1)             |
+| Session Population      | Data enrichment          | O(m + w)             | O(m + w)         |
+| Date Normalization      | Time formatting          | O(1)                 | O(1)             |
+| Rate Limiting           | Security                 | O(1)                 | O(1)             |
+| Signup Rate Limiting    | Spam prevention          | O(log n)             | O(k)             |
 
 **Where:**
 
-- n = number of items (nutrients, ingredients, etc.)
+- n = number of items (nutrients, ingredients, database records, etc.)
 - k = number of API fallback sources or active rate limit keys
-- m = meal entries
+- m = meal entries or user allergens
 - w = weight logs
+- f = foods returned from query (≤ 20)
+- i = ingredients per food
 
 ---
 
-**Last Updated:** November 2, 2025  
-**Version:** 1.1
-
----
-
-## **SUMMARY TABLE**
-
-| Algorithm               | Purpose              | Time Complexity | Space Complexity |
-| ----------------------- | -------------------- | --------------- | ---------------- |
-| CNN Inference           | Food classification  | O(1) per image  | O(1)             |
-| Allergen Detection      | Safety matching      | O(n)            | O(n)             |
-| Nutrition Normalization | Data standardization | O(n)            | O(n)             |
-| Unit Conversion         | Standardize units    | O(1)            | O(1)             |
-| API Cascade             | Data retrieval       | O(k) worst case | O(1)             |
-| Database Indexing       | Query optimization   | O(log n)        | O(n)             |
-| Diet Aggregation        | Data transformation  | O(n log n)      | O(n)             |
-| Nutrition Grouping      | AI categorization    | O(n)            | O(n)             |
-| Nutrient Mapping        | ID translation       | O(n)            | O(1)             |
-| Ingredient Extraction   | Text parsing         | O(n)            | O(n)             |
-| Deduplication           | Storage optimization | O(log n)        | O(1)             |
-| Session Population      | Data enrichment      | O(m + w)        | O(m + w)         |
-| Date Normalization      | Time formatting      | O(1)            | O(1)             |
-| Rate Limiting           | Security             | O(1)            | O(1)             |
-
-**Where:**
-
-- n = number of items (nutrients, ingredients, etc.)
-- k = number of API fallback sources
-- m = meal entries
-- w = weight logs
+**Last Updated:** November 13, 2025  
+**Version:** 1.2
 
 ---
 

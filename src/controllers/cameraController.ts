@@ -11,6 +11,7 @@ import {
 import FoodModel from "../models/Foods";
 import { convertToGrams } from "../utils/convertToGrams";
 import { classifyImage } from "../utils/model_inference";
+import { getTriggeredAllergens } from "../utils/allergenMapping";
 import * as fs from "fs";
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
@@ -41,6 +42,36 @@ const classNames = JSON.parse(
   fs.readFileSync("src/cnn_model/class_names.json", "utf8")
 );
 const modelPath = "src/cnn_model/model.onnx";
+
+/**
+ * Merges Gemini AI allergen detection with local comprehensive allergen mapping
+ * This ensures we catch allergens that Gemini might miss and provides redundancy
+ */
+function mergeAllergenDetection(
+  geminiAllergens: Array<{ ingredient: string; allergen: string }>,
+  ingredients: string[],
+  userAllergens: string[]
+): Array<{ ingredient: string; allergen: string }> {
+  // Get allergens from local mapping
+  const localAllergens = getTriggeredAllergens(ingredients, userAllergens);
+
+  // Merge both results, avoiding duplicates
+  const merged = [...geminiAllergens];
+  const existingKeys = new Set(
+    geminiAllergens.map((a) => `${a.ingredient}:${a.allergen}`.toLowerCase())
+  );
+
+  for (const localAllergen of localAllergens) {
+    const key =
+      `${localAllergen.ingredient}:${localAllergen.allergen}`.toLowerCase();
+    if (!existingKeys.has(key)) {
+      merged.push(localAllergen);
+      existingKeys.add(key);
+    }
+  }
+
+  return merged;
+}
 
 export async function barcodeHandler(req: Request, res: Response) {
   try {
@@ -141,15 +172,24 @@ export async function barcodeHandler(req: Request, res: Response) {
           })
         );
 
+        const ingredients =
+          (food.ingredients as string)?.split(",") ||
+          organizedResult.ingredients;
+
+        // Merge Gemini AI allergen detection with local comprehensive mapping
+        const mergedAllergens = mergeAllergenDetection(
+          organizedResult.triggeredAllergens,
+          ingredients,
+          (req.user as any).allergens
+        );
+
         res.status(200).json({
           message: "Barcode data received successfully",
           data: {
             name: food.description,
             brand: food.brandOwner,
-            ingredients:
-              (food.ingredients as string)?.split(",") ||
-              organizedResult.ingredients,
-            triggeredAllergens: organizedResult.triggeredAllergens,
+            ingredients,
+            triggeredAllergens: mergedAllergens,
             nutritionData: convertedGroupedNutrition.map((g) => ({
               title: g.title ?? "",
               items: g.items.filter((n) => !n.name.includes(":")),
@@ -256,13 +296,23 @@ export async function barcodeHandler(req: Request, res: Response) {
                 })
                 .filter((n) => n.value > 0.01),
             }));
+
+          const ingredients = organizedResult.ingredients;
+
+          // Merge Gemini AI allergen detection with local comprehensive mapping
+          const mergedAllergens = mergeAllergenDetection(
+            organizedResult.triggeredAllergens,
+            ingredients,
+            (req.user as any).allergens
+          );
+
           res.status(200).json({
             message: "Barcode data received successfully",
             data: {
               name: food.food_name,
               brand: food.brand_name,
-              ingredients: organizedResult.ingredients,
-              triggeredAllergens: organizedResult.triggeredAllergens,
+              ingredients,
+              triggeredAllergens: mergedAllergens,
               nutritionData: convertedGroupedNutrition,
               servingSize: food.serving_weight_grams + "g",
               source: "nutritionix",
@@ -387,16 +437,25 @@ export async function barcodeHandler(req: Request, res: Response) {
       })
     );
 
+    const ingredients =
+      ingredientNames.length > 0
+        ? ingredientNames
+        : organizedResult.ingredients;
+
+    // Merge Gemini AI allergen detection with local comprehensive mapping
+    const mergedAllergens = mergeAllergenDetection(
+      organizedResult.triggeredAllergens,
+      ingredients,
+      (req.user as any).allergens
+    );
+
     res.status(200).json({
       message: "Barcode data received successfully from Open Food Facts",
       data: {
         name: offData.product.product_name || "Unknown",
         brand: offData.product.brands || "Unknown",
-        ingredients:
-          ingredientNames.length > 0
-            ? ingredientNames
-            : organizedResult.ingredients,
-        triggeredAllergens: organizedResult.triggeredAllergens,
+        ingredients,
+        triggeredAllergens: mergedAllergens,
         nutritionData: convertedGroupedNutrition,
         servingSize:
           offData.product.serving_size ||
@@ -609,12 +668,21 @@ export async function getFoodDataHandler(req: Request, res: Response) {
 
         console.log(convertedGroupedNutrition);
 
+        const ingredients = food.common_ingredients;
+
+        // Merge Gemini AI allergen detection with local comprehensive mapping
+        const mergedAllergens = mergeAllergenDetection(
+          geminiRes.triggeredAllergens,
+          ingredients,
+          (req.user as any).allergens
+        );
+
         res.status(200).json({
           message: "Food data retrieved successfully",
           data: {
             foodName: food.name,
-            ingredients: food.common_ingredients,
-            triggeredAllergens: geminiRes.triggeredAllergens,
+            ingredients,
+            triggeredAllergens: mergedAllergens,
             nutritionData: convertedGroupedNutrition,
             servingSize: food.serving_size,
             source: food.source || "database",
@@ -730,7 +798,14 @@ export async function getFoodDataHandler(req: Request, res: Response) {
 
           results.ingredients =
             (food.ingredients as string)?.split(",") || geminiRes.ingredients;
-          results.triggeredAllergens = geminiRes.triggeredAllergens;
+
+          // Merge Gemini AI allergen detection with local comprehensive mapping
+          results.triggeredAllergens = mergeAllergenDetection(
+            geminiRes.triggeredAllergens,
+            results.ingredients,
+            (req.user as any).allergens
+          );
+
           results.nutritionData = convertedGroupedNutrition.map((g) => ({
             title: g.title ?? "",
             items: g.items.filter((n) => !n.name.includes(":")),
@@ -842,11 +917,21 @@ export async function getFoodDataHandler(req: Request, res: Response) {
                 .filter((n) => n.value > 0.01),
             })
           );
+
+          const ingredients = geminiRes.ingredients;
+
+          // Merge Gemini AI allergen detection with local comprehensive mapping
+          const mergedAllergens = mergeAllergenDetection(
+            geminiRes.triggeredAllergens,
+            ingredients,
+            (req.user as any).allergens
+          );
+
           const result = {
             foodName: food.food_name,
-            ingredients: geminiRes.ingredients,
+            ingredients,
             servingSize: "150g",
-            triggeredAllergens: geminiRes.triggeredAllergens,
+            triggeredAllergens: mergedAllergens,
             nutritionData: convertedGroupedNutrition,
             source: "nutritionix",
           };
@@ -875,13 +960,22 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       return;
     }
 
+    const ingredients = geminiRes.ingredients;
+
+    // Merge Gemini AI allergen detection with local comprehensive mapping
+    const mergedAllergens = mergeAllergenDetection(
+      geminiRes.triggeredAllergens,
+      ingredients,
+      (req.user as any).allergens
+    );
+
     res.status(200).json({
       message: "Food Data received successfully",
       data: {
         foodName,
         servingSize: "150g",
-        ingredients: geminiRes.ingredients,
-        triggeredAllergens: geminiRes.triggeredAllergens,
+        ingredients,
+        triggeredAllergens: mergedAllergens,
         nutritionData: geminiRes.groupedNutrition.map((g) =>
           g.items
             .map((n) => {

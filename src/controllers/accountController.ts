@@ -3,12 +3,14 @@ import UserAccount, { IUserAccount } from "../models/UserAccount";
 import ScanResult from "../models/ScanResult";
 import MealEntry from "../models/MealEntry";
 import LoggedWeight from "../models/LoggedWeight";
+import FoodModel from "../models/Foods";
 import { v2 as cloudinary } from "cloudinary";
 import { getDateString } from "../utils/getDateString";
 import {
   buildDietHistoryResponse,
   populateUserWithDynamicData,
 } from "../utils/populateUserData";
+import { hasAllergen } from "../utils/allergenMapping";
 
 const ALLOWED_FIELDS = [
   "gender",
@@ -416,6 +418,100 @@ export const deleteLoggedWeight = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error deleting logged weight:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getRecommendationForTheDay = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+
+    const uid = (req.user as { _id: string })._id;
+    const user = await UserAccount.findById(uid);
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const recommendations = [];
+
+    // Get user's daily macro recommendations and allergens
+    const dailyRecommendation = user.dailyRecommendation || {
+      calories: 0,
+      carbs: 0,
+      protein: 0,
+      fat: 0,
+    };
+    const userAllergens = user.allergens || [];
+
+    // Only search if user has daily recommendations set
+    if (dailyRecommendation.calories > 0) {
+      // Query foods from database
+      const foods = await FoodModel.find({}).lean();
+
+      // Filter and score foods based on macro matching
+      for (const food of foods) {
+        // Check for allergen conflicts in common_ingredients using comprehensive mapping
+        if (hasAllergen(food.common_ingredients, userAllergens)) {
+          continue; // Skip foods with allergens
+        }
+
+        // Extract macros from nutrition array
+        const getNutritionValue = (name: string): number => {
+          const nutrient = food.nutrition.find(
+            (n) => n.name.toLowerCase() === name.toLowerCase()
+          );
+          return nutrient ? nutrient.value : 0;
+        };
+
+        const foodCalories = getNutritionValue("calories");
+        const foodCarbs = getNutritionValue("carbohydrates");
+        const foodProtein = getNutritionValue("protein");
+        const foodFat = getNutritionValue("fat");
+
+        // Calculate a simple match score based on how close the food is to daily recommendations
+        // We'll look for foods that are a reasonable portion of daily intake (10-40%)
+        const targetCaloriesPerMeal = dailyRecommendation.calories / 3; // Rough estimate for one meal
+        const targetCarbsPerMeal = dailyRecommendation.carbs / 3;
+        const targetProteinPerMeal = dailyRecommendation.protein / 3;
+        const targetFatPerMeal = dailyRecommendation.fat / 3;
+
+        // Calculate percentage match (within 50-150% of target is good)
+        const isGoodMatch =
+          foodCalories >= targetCaloriesPerMeal * 0.5 &&
+          foodCalories <= targetCaloriesPerMeal * 1.5 &&
+          foodCarbs >= targetCarbsPerMeal * 0.5 &&
+          foodCarbs <= targetCarbsPerMeal * 1.5 &&
+          foodProtein >= targetProteinPerMeal * 0.5 &&
+          foodProtein <= targetProteinPerMeal * 1.5 &&
+          foodFat >= targetFatPerMeal * 0.5 &&
+          foodFat <= targetFatPerMeal * 1.5;
+
+        if (isGoodMatch) {
+          recommendations.push({
+            name: food.name,
+            servingSize: food.serving_size,
+            nutrition: food.nutrition,
+            source: food.source,
+            ingredients: food.common_ingredients,
+          });
+        }
+      }
+    }
+
+    res.status(200).json({
+      message: "Daily recommendations retrieved",
+      recommendations,
+    });
+  } catch (error) {
+    console.error("Error getting daily recommendations:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
