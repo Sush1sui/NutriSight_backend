@@ -496,6 +496,7 @@ export const getRecommendationForTheDay = async (
       console.log(`Meal targets:`, JSON.stringify(mealTargets, null, 2));
 
       // Helper function to check if food matches meal target
+      // Foods are matched as meal components, not full meals
       const matchesMealTarget = (
         foodCalories: number,
         foodCarbs: number,
@@ -503,16 +504,17 @@ export const getRecommendationForTheDay = async (
         foodFat: number,
         target: typeof mealTargets.breakfast
       ) => {
-        // Allow foods within 50-150% of target macros
+        // Match foods that are reasonable portions (20-80% of meal target)
+        // This allows combining multiple foods to reach the target
         return (
-          foodCalories >= target.calories * 0.5 &&
-          foodCalories <= target.calories * 1.5 &&
-          foodCarbs >= target.carbs * 0.5 &&
-          foodCarbs <= target.carbs * 1.5 &&
-          foodProtein >= target.protein * 0.5 &&
-          foodProtein <= target.protein * 1.5 &&
-          foodFat >= target.fat * 0.5 &&
-          foodFat <= target.fat * 1.5
+          foodCalories >= target.calories * 0.2 &&
+          foodCalories <= target.calories * 0.8 &&
+          foodCarbs >= target.carbs * 0.2 &&
+          foodCarbs <= target.carbs * 0.8 &&
+          foodProtein >= target.protein * 0.2 &&
+          foodProtein <= target.protein * 0.8 &&
+          foodFat >= target.fat * 0.2 &&
+          foodFat <= target.fat * 0.8
         );
       };
 
