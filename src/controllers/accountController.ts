@@ -440,6 +440,15 @@ export const getRecommendationForTheDay = async (
       return;
     }
 
+    // Optional query parameters for macro preferences
+    const { highProtein, highCarbs, highFat, highCal } = req.query;
+    const macroPreference = {
+      highProtein: highProtein === "true",
+      highCarbs: highCarbs === "true",
+      highFat: highFat === "true",
+      highCal: highCal === "true",
+    };
+
     const recommendations = {
       breakfast: [] as string[],
       lunch: [] as string[],
@@ -492,30 +501,91 @@ export const getRecommendationForTheDay = async (
       console.log("=== RECOMMENDATION DEBUG ===");
       console.log(`Total foods: ${foods.length}`);
       console.log(`User allergens: ${JSON.stringify(userAllergens)}`);
+      console.log(`Macro preferences: ${JSON.stringify(macroPreference)}`);
       console.log(`Daily recommendation:`, dailyRecommendation);
       console.log(`Meal targets:`, JSON.stringify(mealTargets, null, 2));
 
-      // Helper function to check if food matches meal target
-      // Foods are matched as meal components, not full meals
-      const matchesMealTarget = (
+      // Helper function to check if food matches macro preferences
+      const matchesMacroPreference = (
         foodCalories: number,
         foodCarbs: number,
         foodProtein: number,
-        foodFat: number,
-        target: typeof mealTargets.breakfast
+        foodFat: number
+      ): boolean => {
+        // If no preferences specified, all foods match
+        if (
+          !macroPreference.highProtein &&
+          !macroPreference.highCarbs &&
+          !macroPreference.highFat &&
+          !macroPreference.highCal
+        ) {
+          return true;
+        }
+
+        // High calorie: >400 cal per serving
+        if (macroPreference.highCal && foodCalories < 400) {
+          return false;
+        }
+
+        // Calculate macro percentages of total calories
+        const proteinCals = foodProtein * 4;
+        const carbsCals = foodCarbs * 4;
+        const fatCals = foodFat * 9;
+        const totalCals = proteinCals + carbsCals + fatCals;
+
+        if (totalCals === 0) return false;
+
+        const proteinPercent = (proteinCals / totalCals) * 100;
+        const carbsPercent = (carbsCals / totalCals) * 100;
+        const fatPercent = (fatCals / totalCals) * 100;
+
+        // High protein: >30% calories from protein
+        if (macroPreference.highProtein && proteinPercent < 30) {
+          return false;
+        }
+
+        // High carbs: >50% calories from carbs
+        if (macroPreference.highCarbs && carbsPercent < 50) {
+          return false;
+        }
+
+        // High fat: >35% calories from fat
+        if (macroPreference.highFat && fatPercent < 35) {
+          return false;
+        }
+
+        return true;
+      };
+
+      // Helper function to categorize food by meal type based on calories and composition
+      // This is more realistic than trying to match full meal macro targets
+      const isSuitableForMeal = (
+        foodCalories: number,
+        _foodProtein: number,
+        mealType: "breakfast" | "lunch" | "dinner" | "snacks"
       ) => {
-        // Match foods that are reasonable portions (20-80% of meal target)
-        // This allows combining multiple foods to reach the target
-        return (
-          foodCalories >= target.calories * 0.2 &&
-          foodCalories <= target.calories * 0.8 &&
-          foodCarbs >= target.carbs * 0.2 &&
-          foodCarbs <= target.carbs * 0.8 &&
-          foodProtein >= target.protein * 0.2 &&
-          foodProtein <= target.protein * 0.8 &&
-          foodFat >= target.fat * 0.2 &&
-          foodFat <= target.fat * 0.8
-        );
+        if (foodCalories === 0) return false;
+
+        switch (mealType) {
+          case "breakfast":
+            // Light to moderate: 100-500 cal
+            return foodCalories >= 100 && foodCalories <= 500;
+
+          case "lunch":
+            // Moderate to hearty: 150-600 cal (main meal)
+            return foodCalories >= 150 && foodCalories <= 600;
+
+          case "dinner":
+            // Moderate to hearty: 150-550 cal
+            return foodCalories >= 150 && foodCalories <= 550;
+
+          case "snacks":
+            // Light: 50-250 cal
+            return foodCalories >= 50 && foodCalories <= 250;
+
+          default:
+            return false;
+        }
       };
 
       // Filter foods for each meal type
@@ -570,46 +640,33 @@ export const getRecommendationForTheDay = async (
             `  Macros: cal=${foodCalories}, carbs=${foodCarbs}, protein=${foodProtein}, fat=${foodFat}`
           );
           console.log(
-            `  Lunch target: cal=${mealTargets.lunch.calories}, carbs=${mealTargets.lunch.carbs}, protein=${mealTargets.lunch.protein}, fat=${mealTargets.lunch.fat}`
-          );
-          console.log(
-            `  Lunch range: cal=${mealTargets.lunch.calories * 0.5}-${
-              mealTargets.lunch.calories * 1.5
+            `  Suitable for lunch (150-600 cal)? ${
+              foodCalories >= 150 && foodCalories <= 600
             }`
           );
-
-          const lunchMatch = matchesMealTarget(
-            foodCalories,
-            foodCarbs,
-            foodProtein,
-            foodFat,
-            mealTargets.lunch
+          console.log(
+            `  Matches macro preference? ${matchesMacroPreference(
+              foodCalories,
+              foodCarbs,
+              foodProtein,
+              foodFat
+            )}`
           );
-          console.log(`  Matches lunch? ${lunchMatch}`);
         }
 
-        // Check which meal types this food matches
+        // Apply macro preference filter
         if (
-          matchesMealTarget(
-            foodCalories,
-            foodCarbs,
-            foodProtein,
-            foodFat,
-            mealTargets.breakfast
-          )
+          !matchesMacroPreference(foodCalories, foodCarbs, foodProtein, foodFat)
         ) {
+          continue;
+        }
+
+        // Check which meal types this food is suitable for
+        if (isSuitableForMeal(foodCalories, foodProtein, "breakfast")) {
           recommendations.breakfast.push(food.name);
         }
 
-        if (
-          matchesMealTarget(
-            foodCalories,
-            foodCarbs,
-            foodProtein,
-            foodFat,
-            mealTargets.lunch
-          )
-        ) {
+        if (isSuitableForMeal(foodCalories, foodProtein, "lunch")) {
           recommendations.lunch.push(food.name);
           lunchMatched++;
           if (lunchMatched <= 3) {
@@ -617,27 +674,11 @@ export const getRecommendationForTheDay = async (
           }
         }
 
-        if (
-          matchesMealTarget(
-            foodCalories,
-            foodCarbs,
-            foodProtein,
-            foodFat,
-            mealTargets.dinner
-          )
-        ) {
+        if (isSuitableForMeal(foodCalories, foodProtein, "dinner")) {
           recommendations.dinner.push(food.name);
         }
 
-        if (
-          matchesMealTarget(
-            foodCalories,
-            foodCarbs,
-            foodProtein,
-            foodFat,
-            mealTargets.snacks
-          )
-        ) {
+        if (isSuitableForMeal(foodCalories, foodProtein, "snacks")) {
           recommendations.snacks.push(food.name);
         }
       }
@@ -667,6 +708,7 @@ export const getRecommendationForTheDay = async (
         dinner: "30%",
         snacks: "10%",
       },
+      appliedFilters: macroPreference,
     });
   } catch (error) {
     console.error("Error getting daily recommendations:", error);

@@ -639,6 +639,13 @@ Field: profilePicture (file)
 
 **GET** `/account/recommend-foods`
 
+**Query Parameters** (optional):
+
+- `highProtein=true` - Filter for high-protein foods (>30% calories from protein)
+- `highCarbs=true` - Filter for high-carb foods (>50% calories from carbs)
+- `highFat=true` - Filter for high-fat foods (>35% calories from fat)
+- `highCal=true` - Filter for high-calorie foods (>400 cal per serving)
+
 ```json
 // Response
 {
@@ -654,11 +661,17 @@ Field: profilePicture (file)
     "lunch": "35%",
     "dinner": "30%",
     "snacks": "10%"
+  },
+  "appliedFilters": {
+    "highProtein": false,
+    "highCarbs": false,
+    "highFat": false,
+    "highCal": false
   }
 }
 ```
 
-_Note: Returns food names from local database categorized by meal type. Each meal type gets foods that match 50-150% of that meal's target macros (based on percentage distribution). Foods with user allergens are excluded. Limited to 10 recommendations per meal type._
+_Note: Returns food names from local database categorized by meal type based on calorie ranges (breakfast: 100-500 cal, lunch: 150-600 cal, dinner: 150-550 cal, snacks: 50-250 cal). Foods with user allergens are excluded. Optional macro filters can be applied. Limited to 10 recommendations per meal type._
 
 **GET** `/camera/food-classes`
 
