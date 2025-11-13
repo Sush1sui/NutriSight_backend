@@ -440,7 +440,12 @@ export const getRecommendationForTheDay = async (
       return;
     }
 
-    const recommendations = [];
+    const recommendations = {
+      breakfast: [] as string[],
+      lunch: [] as string[],
+      dinner: [] as string[],
+      snacks: [] as string[],
+    };
 
     // Get user's daily macro recommendations and allergens
     const dailyRecommendation = user.dailyRecommendation || {
@@ -453,12 +458,61 @@ export const getRecommendationForTheDay = async (
 
     // Only search if user has daily recommendations set
     if (dailyRecommendation.calories > 0) {
+      // Calculate target macros per meal based on frontend distribution
+      const mealTargets = {
+        breakfast: {
+          calories: dailyRecommendation.calories * 0.25,
+          carbs: dailyRecommendation.carbs * 0.25,
+          protein: dailyRecommendation.protein * 0.25,
+          fat: dailyRecommendation.fat * 0.25,
+        },
+        lunch: {
+          calories: dailyRecommendation.calories * 0.35,
+          carbs: dailyRecommendation.carbs * 0.35,
+          protein: dailyRecommendation.protein * 0.35,
+          fat: dailyRecommendation.fat * 0.35,
+        },
+        dinner: {
+          calories: dailyRecommendation.calories * 0.3,
+          carbs: dailyRecommendation.carbs * 0.3,
+          protein: dailyRecommendation.protein * 0.3,
+          fat: dailyRecommendation.fat * 0.3,
+        },
+        snacks: {
+          calories: dailyRecommendation.calories * 0.1,
+          carbs: dailyRecommendation.carbs * 0.1,
+          protein: dailyRecommendation.protein * 0.1,
+          fat: dailyRecommendation.fat * 0.1,
+        },
+      };
+
       // Query foods from database
       const foods = await FoodModel.find({}).lean();
 
-      // Filter and score foods based on macro matching
+      // Helper function to check if food matches meal target
+      const matchesMealTarget = (
+        foodCalories: number,
+        foodCarbs: number,
+        foodProtein: number,
+        foodFat: number,
+        target: typeof mealTargets.breakfast
+      ) => {
+        // Allow foods within 50-150% of target macros
+        return (
+          foodCalories >= target.calories * 0.5 &&
+          foodCalories <= target.calories * 1.5 &&
+          foodCarbs >= target.carbs * 0.5 &&
+          foodCarbs <= target.carbs * 1.5 &&
+          foodProtein >= target.protein * 0.5 &&
+          foodProtein <= target.protein * 1.5 &&
+          foodFat >= target.fat * 0.5 &&
+          foodFat <= target.fat * 1.5
+        );
+      };
+
+      // Filter foods for each meal type
       for (const food of foods) {
-        // Check for allergen conflicts in common_ingredients using comprehensive mapping
+        // Check for allergen conflicts using comprehensive mapping
         if (hasAllergen(food.common_ingredients, userAllergens)) {
           continue; // Skip foods with allergens
         }
@@ -476,39 +530,72 @@ export const getRecommendationForTheDay = async (
         const foodProtein = getNutritionValue("protein");
         const foodFat = getNutritionValue("fat");
 
-        // Calculate a simple match score based on how close the food is to daily recommendations
-        // We'll look for foods that are a reasonable portion of daily intake (10-40%)
-        const targetCaloriesPerMeal = dailyRecommendation.calories / 3; // Rough estimate for one meal
-        const targetCarbsPerMeal = dailyRecommendation.carbs / 3;
-        const targetProteinPerMeal = dailyRecommendation.protein / 3;
-        const targetFatPerMeal = dailyRecommendation.fat / 3;
+        // Check which meal types this food matches
+        if (
+          matchesMealTarget(
+            foodCalories,
+            foodCarbs,
+            foodProtein,
+            foodFat,
+            mealTargets.breakfast
+          )
+        ) {
+          recommendations.breakfast.push(food.name);
+        }
 
-        // Calculate percentage match (within 50-150% of target is good)
-        const isGoodMatch =
-          foodCalories >= targetCaloriesPerMeal * 0.5 &&
-          foodCalories <= targetCaloriesPerMeal * 1.5 &&
-          foodCarbs >= targetCarbsPerMeal * 0.5 &&
-          foodCarbs <= targetCarbsPerMeal * 1.5 &&
-          foodProtein >= targetProteinPerMeal * 0.5 &&
-          foodProtein <= targetProteinPerMeal * 1.5 &&
-          foodFat >= targetFatPerMeal * 0.5 &&
-          foodFat <= targetFatPerMeal * 1.5;
+        if (
+          matchesMealTarget(
+            foodCalories,
+            foodCarbs,
+            foodProtein,
+            foodFat,
+            mealTargets.lunch
+          )
+        ) {
+          recommendations.lunch.push(food.name);
+        }
 
-        if (isGoodMatch) {
-          recommendations.push({
-            name: food.name,
-            servingSize: food.serving_size,
-            nutrition: food.nutrition,
-            source: food.source,
-            ingredients: food.common_ingredients,
-          });
+        if (
+          matchesMealTarget(
+            foodCalories,
+            foodCarbs,
+            foodProtein,
+            foodFat,
+            mealTargets.dinner
+          )
+        ) {
+          recommendations.dinner.push(food.name);
+        }
+
+        if (
+          matchesMealTarget(
+            foodCalories,
+            foodCarbs,
+            foodProtein,
+            foodFat,
+            mealTargets.snacks
+          )
+        ) {
+          recommendations.snacks.push(food.name);
         }
       }
+
+      // Limit recommendations per meal to avoid overwhelming response
+      recommendations.breakfast = recommendations.breakfast.slice(0, 10);
+      recommendations.lunch = recommendations.lunch.slice(0, 10);
+      recommendations.dinner = recommendations.dinner.slice(0, 10);
+      recommendations.snacks = recommendations.snacks.slice(0, 10);
     }
 
     res.status(200).json({
       message: "Daily recommendations retrieved",
       recommendations,
+      mealDistribution: {
+        breakfast: "25%",
+        lunch: "35%",
+        dinner: "30%",
+        snacks: "10%",
+      },
     });
   } catch (error) {
     console.error("Error getting daily recommendations:", error);

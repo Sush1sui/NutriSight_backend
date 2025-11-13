@@ -643,24 +643,22 @@ Field: profilePicture (file)
 // Response
 {
   "message": "Daily recommendations retrieved",
-  "recommendations": [
-    {
-      "name": "Chicken Adobo",
-      "servingSize": "150g",
-      "nutrition": [
-        { "name": "calories", "value": 250, "unit": "kcal" },
-        { "name": "protein", "value": 20, "unit": "g" },
-        { "name": "carbohydrates", "value": 15, "unit": "g" },
-        { "name": "fat", "value": 12, "unit": "g" }
-      ],
-      "source": "database",
-      "ingredients": ["chicken", "soy sauce", "vinegar", "garlic"]
-    }
-  ]
+  "recommendations": {
+    "breakfast": ["Pancit Canton", "Tapsilog", "Longganisa"],
+    "lunch": ["Chicken Adobo", "Sinigang na Baboy", "Kare-kare"],
+    "dinner": ["Lechon Kawali", "Pinakbet", "Bicol Express"],
+    "snacks": ["Turon", "Banana Cue", "Lumpia Shanghai"]
+  },
+  "mealDistribution": {
+    "breakfast": "25%",
+    "lunch": "35%",
+    "dinner": "30%",
+    "snacks": "10%"
+  }
 }
 ```
 
-_Note: Returns foods from local database that match user's daily macro recommendations (50-150% of target per meal) and exclude allergens. Returns empty array if no matches found._
+_Note: Returns food names from local database categorized by meal type. Each meal type gets foods that match 50-150% of that meal's target macros (based on percentage distribution). Foods with user allergens are excluded. Limited to 10 recommendations per meal type._
 
 **GET** `/camera/food-classes`
 

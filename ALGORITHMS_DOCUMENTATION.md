@@ -1592,296 +1592,409 @@ mergeAllergenDetection(
 
 **Location:** `src/controllers/accountController.ts`
 
-**Algorithm Name:** Macro Range Filtering with Allergen Exclusion
+**Algorithm Name:** Meal-Specific Macro Range Filtering with Allergen Exclusion
 
-### **Concept: Nutrient-Based Query with Safety Filtering**
+### **Concept: Meal-Categorized Nutrient Matching with Safety Filtering**
 
-**Description:** A personalized food recommendation system that queries the local Foods database to suggest suitable meals based on the user's daily macro targets and allergen profile. The algorithm divides daily macro goals by 3 (assuming 3 meals/day), establishes a flexible range of 50-150% around each target, constructs a MongoDB aggregation query to match foods within those ranges, filters results using the local allergen mapping system, and returns safe, nutritionally appropriate food recommendations.
+**Description:** A personalized food recommendation system that queries the local Foods database to suggest suitable meals based on the user's daily macro targets and allergen profile. The algorithm distributes daily macro goals across four meal types using frontend-aligned percentages (Breakfast: 25%, Lunch: 35%, Dinner: 30%, Snacks: 10%), establishes a flexible range of 50-150% around each meal's target macros, iterates through the food database to match foods against each meal type's requirements, filters results using the local allergen mapping system, and returns categorized food name recommendations.
 
-- **Purpose:** Suggest foods matching user's daily nutritional goals without allergens
-- **Method:** Database query with macro range filtering and allergen exclusion
+- **Purpose:** Suggest meal-specific foods matching user's daily nutritional goals without allergens
+- **Method:** Meal-categorized database query with macro range filtering and allergen exclusion
 
 ### **Algorithm Steps**
 
 ```
-Endpoint: GET /account/daily-recommendations
+Endpoint: GET /account/recommend-foods
 Authentication: Required (JWT session)
 
 Input:
-  - User session (contains dailyIntakeRecommendations and allergens)
+  - User session (contains dailyRecommendation and allergens)
 
 Steps:
   1. Extract user data from session:
-     const { dailyIntakeRecommendations, allergens } = req.user;
+     const { dailyRecommendation, allergens } = req.user;
 
-  2. Calculate per-meal macro targets (assuming 3 meals/day):
-     targetCalories = dailyIntakeRecommendations.totalCalories / 3
-     targetProtein = dailyIntakeRecommendations.macronutrients.protein / 3
-     targetCarbs = dailyIntakeRecommendations.macronutrients.carbohydrates / 3
-     targetFat = dailyIntakeRecommendations.macronutrients.fat / 3
-
-  3. Define flexible ranges (50-150% of target):
-     calorieRange = {
-       min: targetCalories * 0.5,
-       max: targetCalories * 1.5
-     }
-     proteinRange = {
-       min: targetProtein * 0.5,
-       max: targetProtein * 1.5
-     }
-     carbsRange = {
-       min: targetCarbs * 0.5,
-       max: targetCarbs * 1.5
-     }
-     fatRange = {
-       min: targetFat * 0.5,
-       max: targetFat * 1.5
-     }
-
-  4. Query Foods database:
-     query = {
-       "nutritionalData.totalCalories": { $gte: calorieRange.min, $lte: calorieRange.max },
-       "nutritionalData.macronutrients.protein": { $gte: proteinRange.min, $lte: proteinRange.max },
-       "nutritionalData.macronutrients.carbohydrates": { $gte: carbsRange.min, $lte: carbsRange.max },
-       "nutritionalData.macronutrients.fat": { $gte: fatRange.min, $lte: fatRange.max }
+  2. Calculate per-meal macro targets based on meal distribution:
+     mealTargets = {
+       breakfast: {
+         calories: dailyRecommendation.calories * 0.25,
+         carbs: dailyRecommendation.carbs * 0.25,
+         protein: dailyRecommendation.protein * 0.25,
+         fat: dailyRecommendation.fat * 0.25
+       },
+       lunch: {
+         calories: dailyRecommendation.calories * 0.35,
+         carbs: dailyRecommendation.carbs * 0.35,
+         protein: dailyRecommendation.protein * 0.35,
+         fat: dailyRecommendation.fat * 0.35
+       },
+       dinner: {
+         calories: dailyRecommendation.calories * 0.3,
+         carbs: dailyRecommendation.carbs * 0.3,
+         protein: dailyRecommendation.protein * 0.3,
+         fat: dailyRecommendation.fat * 0.3
+       },
+       snacks: {
+         calories: dailyRecommendation.calories * 0.1,
+         carbs: dailyRecommendation.carbs * 0.1,
+         protein: dailyRecommendation.protein * 0.1,
+         fat: dailyRecommendation.fat * 0.1
+       }
      }
 
-     matchingFoods = await FoodModel.find(query).limit(20);
+  3. Initialize categorized recommendations:
+     recommendations = {
+       breakfast: [] as string[],
+       lunch: [] as string[],
+       dinner: [] as string[],
+       snacks: [] as string[]
+     }
 
-  5. Filter allergens using local mapping:
-     safeFoods = matchingFoods.filter(food => {
-       const ingredients = food.ingredients || [];
-       return !hasAllergen(ingredients, allergens);
-     });
+  4. Query all foods from database:
+     foods = await FoodModel.find({}).lean();
 
-  6. Return recommendations:
+  5. For each food in database:
+     a. Check for allergen conflicts:
+        if (hasAllergen(food.common_ingredients, allergens)) {
+          continue; // Skip this food
+        }
+
+     b. Extract macros from nutrition array:
+        foodCalories = getNutritionValue("calories")
+        foodCarbs = getNutritionValue("carbohydrates")
+        foodProtein = getNutritionValue("protein")
+        foodFat = getNutritionValue("fat")
+
+     c. For each meal type (breakfast, lunch, dinner, snacks):
+        - Check if food matches meal target (50-150% range):
+          if (foodCalories >= target.calories * 0.5 &&
+              foodCalories <= target.calories * 1.5 &&
+              foodCarbs >= target.carbs * 0.5 &&
+              foodCarbs <= target.carbs * 1.5 &&
+              foodProtein >= target.protein * 0.5 &&
+              foodProtein <= target.protein * 1.5 &&
+              foodFat >= target.fat * 0.5 &&
+              foodFat <= target.fat * 1.5) {
+            recommendations[mealType].push(food.name);
+          }
+
+  6. Limit results to 10 foods per meal type:
+     recommendations.breakfast = recommendations.breakfast.slice(0, 10);
+     recommendations.lunch = recommendations.lunch.slice(0, 10);
+     recommendations.dinner = recommendations.dinner.slice(0, 10);
+     recommendations.snacks = recommendations.snacks.slice(0, 10);
+
+  7. Return categorized recommendations:
      res.json({
-       recommendations: safeFoods,
-       count: safeFoods.length,
-       targets: {
-         calories: targetCalories,
-         protein: targetProtein,
-         carbs: targetCarbs,
-         fat: targetFat
+       message: "Daily recommendations retrieved",
+       recommendations,
+       mealDistribution: {
+         breakfast: "25%",
+         lunch: "35%",
+         dinner: "30%",
+         snacks: "10%"
        }
      });
 
 Output: {
-  recommendations: Food[],
-  count: number,
-  targets: { calories, protein, carbs, fat }
+  message: string,
+  recommendations: {
+    breakfast: string[],
+    lunch: string[],
+    dinner: string[],
+    snacks: string[]
+  },
+  mealDistribution: {
+    breakfast: "25%",
+    lunch: "35%",
+    dinner: "30%",
+    snacks: "10%"
+  }
 }
 ```
 
 ### **Example Request/Response**
 
 ```
-GET /account/daily-recommendations
+GET /account/recommend-foods
 Authorization: Bearer <token>
 
 User Data:
-  dailyIntakeRecommendations: {
-    totalCalories: 2000,
-    macronutrients: {
-      protein: 150g,
-      carbohydrates: 200g,
-      fat: 67g
-    }
+  dailyRecommendation: {
+    calories: 2000,
+    protein: 150,
+    carbs: 200,
+    fat: 67
   }
   allergens: ["milk", "peanuts"]
 
-Calculated Targets (per meal):
-  calories: 667 kcal (range: 333-1000)
-  protein: 50g (range: 25-75)
-  carbs: 67g (range: 33-100)
-  fat: 22g (range: 11-33)
-
-Database Query:
-  Find foods where:
-    333 ≤ calories ≤ 1000 AND
-    25 ≤ protein ≤ 75 AND
-    33 ≤ carbs ≤ 100 AND
-    11 ≤ fat ≤ 33 AND
-    ingredients do NOT contain milk/peanuts keywords
+Calculated Targets:
+  breakfast: {
+    calories: 500 (range: 250-750),
+    protein: 37.5g (range: 18.75-56.25),
+    carbs: 50g (range: 25-75),
+    fat: 16.75g (range: 8.375-25.125)
+  }
+  lunch: {
+    calories: 700 (range: 350-1050),
+    protein: 52.5g (range: 26.25-78.75),
+    carbs: 70g (range: 35-105),
+    fat: 23.45g (range: 11.725-35.175)
+  }
+  dinner: {
+    calories: 600 (range: 300-900),
+    protein: 45g (range: 22.5-67.5),
+    carbs: 60g (range: 30-90),
+    fat: 20.1g (range: 10.05-30.15)
+  }
+  snacks: {
+    calories: 200 (range: 100-300),
+    protein: 15g (range: 7.5-22.5),
+    carbs: 20g (range: 10-30),
+    fat: 6.7g (range: 3.35-10.05)
+  }
 
 Response:
   {
-    "recommendations": [
-      {
-        "name": "Grilled Chicken Breast with Rice",
-        "nutritionalData": {
-          "totalCalories": 650,
-          "macronutrients": {
-            "protein": 55,
-            "carbohydrates": 70,
-            "fat": 18
-          }
-        },
-        "ingredients": ["chicken", "rice", "olive oil"]
-      },
-      {
-        "name": "Tuna Salad",
-        "nutritionalData": {
-          "totalCalories": 450,
-          "macronutrients": {
-            "protein": 40,
-            "carbohydrates": 35,
-            "fat": 15
-          }
-        },
-        "ingredients": ["tuna", "lettuce", "tomato", "vinegar"]
-      }
-    ],
-    "count": 2,
-    "targets": {
-      "calories": 667,
-      "protein": 50,
-      "carbs": 67,
-      "fat": 22
+    "message": "Daily recommendations retrieved",
+    "recommendations": {
+      "breakfast": ["Tapsilog", "Pancit Canton", "Longganisa"],
+      "lunch": ["Chicken Adobo", "Sinigang na Baboy", "Kare-kare"],
+      "dinner": ["Lechon Kawali", "Pinakbet", "Bicol Express"],
+      "snacks": ["Turon", "Banana Cue", "Lumpia Shanghai"]
+    },
+    "mealDistribution": {
+      "breakfast": "25%",
+      "lunch": "35%",
+      "dinner": "30%",
+      "snacks": "10%"
     }
   }
 ```
 
-### **Time Complexity Analysis**
-
-```
-Database Query: O(log n)
-  - MongoDB indexed query on nutritionalData fields
-  - Assumes indexes exist on:
-    • nutritionalData.totalCalories
-    • nutritionalData.macronutrients.protein
-    • nutritionalData.macronutrients.carbohydrates
-    • nutritionalData.macronutrients.fat
-  - Compound index would optimize further
-
-Allergen Filtering: O(f × i × m × k)
-  Where:
-    f = foods returned from query (limited to 20)
-    i = avg ingredients per food (typically 5-15)
-    m = user allergens (typically 1-5)
-    k = avg keywords per allergen (20-60)
-
-  Example:
-    20 foods × 10 ingredients × 3 allergens × 40 keywords = 24,000 comparisons
-    Still fast (< 10ms) due to simple string operations
-
 Total: O(log n + f × i × m × k)
-  Dominated by database query in most cases
-  Allergen filtering is post-query, so f is limited
+Dominated by database query in most cases
+Allergen filtering is post-query, so f is limited
+
 ```
 
 ### **Space Complexity**
 
 ```
+
 Query Results: O(f)
-  - Limited to 20 foods maximum
-  - Each food document ~1-2 KB
-  - Total: ~20-40 KB in memory
+
+- Limited to 20 foods maximum
+- Each food document ~1-2 KB
+- Total: ~20-40 KB in memory
 
 Filtered Results: O(f)
-  - Worst case: all 20 foods are safe (no allergens)
-  - Best case: 0 foods (all have allergens)
-  - Typical: 10-15 foods
+
+- Worst case: all 20 foods are safe (no allergens)
+- Best case: 0 foods (all have allergens)
+- Typical: 10-15 foods
 
 Response Object: O(f)
-  - JSON serialization of filtered results
-  - Additional targets object is O(1)
+
+- JSON serialization of filtered results
+- Additional targets object is O(1)
 
 Total: O(f) where f ≤ 20 (capped)
+
+```
+
+---
+
+DUPLICATE CONTENT REMOVED (Lines 1774-1828 were duplicate of earlier example)
+
+---
+
+### **Time Complexity Analysis**
+
+```
+
+Database Query: O(n)
+
+- Full table scan of Foods collection
+- No indexed query used (fetches all foods)
+- n = total number of foods in database
+
+Allergen Filtering: O(n × i × m × k)
+Where:
+n = total foods in database
+i = avg ingredients per food (typically 5-15)
+m = user allergens (typically 1-5)
+k = avg keywords per allergen (20-60)
+
+Example:
+1000 foods × 10 ingredients × 3 allergens × 40 keywords = 1,200,000 comparisons
+Fast due to simple string operations (< 50ms on modern hardware)
+
+Meal Type Matching: O(n × 4)
+
+- Each food checked against 4 meal types (breakfast, lunch, dinner, snacks)
+- 12 range comparisons per meal type (4 macros × 3 conditions each)
+- Total: n foods × 4 meals × 12 comparisons = 48n comparisons
+
+Total: O(n + n × i × m × k + 48n) = O(n × i × m × k)
+Dominated by allergen filtering complexity
+Linear with respect to database size
+
+```
+
+### **Space Complexity**
+
+```
+
+Query Results: O(n)
+
+- Full database loaded into memory
+- Each food document ~1-2 KB
+- For 1000 foods: ~1-2 MB in memory
+
+Categorized Recommendations: O(4 × 10) = O(1)
+
+- 4 meal categories × 10 foods max each
+- Maximum 40 food names (strings)
+- Each food name ~20-50 bytes
+- Total: ~1-2 KB for recommendations
+
+Response Object: O(1)
+
+- Fixed-size structure (4 arrays + metadata)
+- Limited to 40 total items maximum
+
+Total: O(n) for processing, O(1) for response
+
 ```
 
 ### **Edge Cases**
 
 ```
-Case 1: No matching foods
-  - Query returns empty array
-  - Response: { recommendations: [], count: 0, targets: {...} }
-  - Client shows "No recommendations available" message
+
+Case 1: No matching foods for any meal type
+
+- All arrays return empty
+- Response: {
+  recommendations: { breakfast: [], lunch: [], dinner: [], snacks: [] },
+  mealDistribution: {...}
+  }
+- Client shows "No recommendations available" message
 
 Case 2: All foods have allergens
-  - Query returns 20 foods
-  - All filtered out by hasAllergen()
-  - Response: { recommendations: [], count: 0, targets: {...} }
+
+- All foods filtered out by hasAllergen()
+- Response: {
+  recommendations: { breakfast: [], lunch: [], dinner: [], snacks: [] },
+  mealDistribution: {...}
+  }
 
 Case 3: User has no allergens
-  - allergens = ["none"] or []
-  - hasAllergen() always returns false
-  - All query results returned (up to 20)
 
-Case 4: Missing dailyIntakeRecommendations
-  - Error handling: return 400 Bad Request
-  - Message: "Daily intake recommendations not set"
+- allergens = ["none"] or []
+- hasAllergen() always returns false
+- All matching foods returned (up to 10 per meal type)
+
+Case 4: Missing dailyRecommendation
+
+- If dailyRecommendation.calories is 0 or undefined
+- Returns empty recommendations for all meal types
+- Response: {
+  recommendations: { breakfast: [], lunch: [], dinner: [], snacks: [] },
+  mealDistribution: {...}
+  }
 
 Case 5: Extreme macro targets
-  - User needs 300g protein/day (100g per meal)
-  - Query may return 0 results (no foods match)
-  - Fallback: could widen range to 25-200% instead of 50-150%
+
+- User needs 300g protein/day (75g for breakfast)
+- May return 0 results for specific meal types (no foods match)
+- Fallback: could widen range to 25-200% instead of 50-150%
+
+Case 6: Food matches multiple meal types
+
+- A single food can appear in multiple categories
+- Example: "Chicken Rice" might fit lunch AND dinner targets
+- This is intentional - gives user flexibility
+
 ```
 
 ### **Optimization Opportunities**
 
 ```
+
 1. Database Indexing:
    db.foods.createIndex({
-     "nutritionalData.totalCalories": 1,
-     "nutritionalData.macronutrients.protein": 1,
-     "nutritionalData.macronutrients.carbohydrates": 1,
-     "nutritionalData.macronutrients.fat": 1
+   "nutrition.name": 1,
+   "nutrition.value": 1
    })
 
-   Impact: Query time from O(n) to O(log n)
+   Impact: Faster nutrition value extraction
 
 2. Caching:
+
    - Cache results for same macro targets + allergens
-   - Use Redis with TTL (e.g., 1 hour)
+   - Use in-memory cache or Redis with TTL (e.g., 1 hour)
    - Key: `recommendations:${userId}:${dailyCalories}:${allergens.join(',')}`
 
-   Impact: Reduce DB queries by 80-90%
+   Impact: Reduce DB queries by 80-90% for repeat requests
 
-3. Pre-filtering by allergens:
-   - Add allergen tags to Foods collection
+3. Pre-filtering by allergens in query:
+
+   - Add allergenTags field to Foods collection
    - Query: { allergenTags: { $nin: userAllergens } }
-   - Reduces post-query filtering
+   - Reduces foods to iterate through
 
-   Impact: Faster allergen exclusion (O(1) per food)
+   Impact: Faster allergen exclusion at database level
 
-4. Pagination:
-   - Add ?page=1&limit=10 query params
-   - Return paginated results instead of all 20
+4. Early termination per meal type:
 
-   Impact: Smaller response payloads
+   - Stop checking foods for a meal type once 10 matches found
+   - Reduces unnecessary comparisons
 
-5. Scoring/Ranking:
-   - Calculate distance from ideal macro targets
-   - Sort by closest match
-   - Return top 10 best matches
+   Impact: Faster response when many matching foods exist
 
-   Impact: Better user experience
+5. Parallel processing:
+
+   - Check all 4 meal types in parallel (Promise.all)
+   - Independent operations, no shared state
+
+   Impact: 4x faster with multi-core systems
+
+6. Scoring/Ranking:
+
+   - Calculate "closeness score" to ideal macros
+   - Sort by best matches before slicing to 10
+   - Return highest quality recommendations
+
+   Impact: Better user experience with most relevant foods
+
+```
+
 ```
 
 ---
 
 ## **SUMMARY TABLE**
 
-| Algorithm               | Purpose                  | Time Complexity      | Space Complexity |
-| ----------------------- | ------------------------ | -------------------- | ---------------- |
-| CNN Inference           | Food classification      | O(1) per image       | O(1)             |
-| Allergen Detection      | Safety matching (AI)     | O(n)                 | O(n)             |
-| Local Allergen Mapping  | Safety matching (local)  | O(n × m × k)         | O(n + m)         |
-| Food Recommendation     | Personalized suggestions | O(log n + f × i × m) | O(f)             |
-| Nutrition Normalization | Data standardization     | O(n)                 | O(n)             |
-| Unit Conversion         | Standardize units        | O(1)                 | O(1)             |
-| API Cascade             | Data retrieval           | O(k) worst case      | O(1)             |
-| Database Indexing       | Query optimization       | O(log n)             | O(n)             |
-| Diet Aggregation        | Data transformation      | O(n log n)           | O(n)             |
-| Nutrition Grouping      | AI categorization        | O(n)                 | O(n)             |
-| Nutrient Mapping        | ID translation           | O(n)                 | O(1)             |
-| Ingredient Extraction   | Text parsing             | O(n)                 | O(n)             |
-| Deduplication           | Storage optimization     | O(log n)             | O(1)             |
-| Session Population      | Data enrichment          | O(m + w)             | O(m + w)         |
-| Date Normalization      | Time formatting          | O(1)                 | O(1)             |
-| Rate Limiting           | Security                 | O(1)                 | O(1)             |
-| Signup Rate Limiting    | Spam prevention          | O(log n)             | O(k)             |
+| Algorithm               | Purpose                  | Time Complexity  | Space Complexity |
+| ----------------------- | ------------------------ | ---------------- | ---------------- |
+| CNN Inference           | Food classification      | O(1) per image   | O(1)             |
+| Allergen Detection      | Safety matching (AI)     | O(n)             | O(n)             |
+| Local Allergen Mapping  | Safety matching (local)  | O(n × m × k)     | O(n + m)         |
+| Food Recommendation     | Personalized suggestions | O(n × i × m × k) | O(n)             |
+| Nutrition Normalization | Data standardization     | O(n)             | O(n)             |
+| Unit Conversion         | Standardize units        | O(1)             | O(1)             |
+| API Cascade             | Data retrieval           | O(k) worst case  | O(1)             |
+| Database Indexing       | Query optimization       | O(log n)         | O(n)             |
+| Diet Aggregation        | Data transformation      | O(n log n)       | O(n)             |
+| Nutrition Grouping      | AI categorization        | O(n)             | O(n)             |
+| Nutrient Mapping        | ID translation           | O(n)             | O(1)             |
+| Ingredient Extraction   | Text parsing             | O(n)             | O(n)             |
+| Deduplication           | Storage optimization     | O(log n)         | O(1)             |
+| Session Population      | Data enrichment          | O(m + w)         | O(m + w)         |
+| Date Normalization      | Time formatting          | O(1)             | O(1)             |
+| Rate Limiting           | Security                 | O(1)             | O(1)             |
+| Signup Rate Limiting    | Spam prevention          | O(log n)         | O(k)             |
 
 **Where:**
 
