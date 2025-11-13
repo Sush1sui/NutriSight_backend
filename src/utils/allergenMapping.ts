@@ -1179,13 +1179,19 @@ export function hasAllergen(
     // Get keyword list for this allergen
     const keywords = allergenKeywordMapping[allergenLower] || [allergenLower];
 
-    // Check if any ingredient contains any keyword
+    // Check if any ingredient contains any keyword (word boundary matching)
     for (const ingredient of ingredientsLower) {
       for (const keyword of keywords) {
-        if (
-          ingredient.includes(keyword.toLowerCase()) ||
-          keyword.toLowerCase().includes(ingredient)
-        ) {
+        const keywordLower = keyword.toLowerCase();
+
+        // Use word boundary regex to avoid false positives
+        // e.g., "fish" matches "fish sauce" but not "shellfish"
+        const wordBoundaryRegex = new RegExp(
+          `\\b${keywordLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+          "i"
+        );
+
+        if (wordBoundaryRegex.test(ingredient)) {
           return true;
         }
       }
@@ -1223,16 +1229,21 @@ export function getTriggeredAllergens(
     // Get keyword list for this allergen
     const keywords = allergenKeywordMapping[allergenLower] || [allergenLower];
 
-    // Check each ingredient
+    // Check each ingredient (word boundary matching)
     for (let i = 0; i < ingredients.length; i++) {
       const ingredient = ingredients[i];
       const ingredientLower = ingredientsLower[i];
 
       for (const keyword of keywords) {
-        if (
-          ingredientLower.includes(keyword.toLowerCase()) ||
-          keyword.toLowerCase().includes(ingredientLower)
-        ) {
+        const keywordLower = keyword.toLowerCase();
+
+        // Use word boundary regex to avoid false positives
+        const wordBoundaryRegex = new RegExp(
+          `\\b${keywordLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+          "i"
+        );
+
+        if (wordBoundaryRegex.test(ingredientLower)) {
           triggered.push({
             ingredient: ingredient, // Keep original casing
             allergen: allergen, // Keep original allergen name
