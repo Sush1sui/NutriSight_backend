@@ -636,18 +636,43 @@ export const getRecommendationForTheDay = async (
           continue; // Skip foods with allergens
         }
 
-        // Extract macros from nutrition array
-        const getNutritionValue = (name: string): number => {
-          const nutrient = food.nutrition.find(
-            (n) => n.name.toLowerCase() === name.toLowerCase()
-          );
-          return nutrient ? nutrient.value : 0;
+        // Extract macros from nutrition array with multiple keyword variations
+        const getNutritionValue = (keywords: string[]): number => {
+          let total = 0;
+          for (const keyword of keywords) {
+            const nutrient = food.nutrition.find((n) =>
+              n.name.toLowerCase().includes(keyword.toLowerCase())
+            );
+            if (nutrient) total += nutrient.value;
+          }
+          return total;
         };
 
-        const foodCalories = getNutritionValue("calories");
-        const foodCarbs = getNutritionValue("carbohydrates");
-        const foodProtein = getNutritionValue("protein");
-        const foodFat = getNutritionValue("fat");
+        const foodCalories = getNutritionValue([
+          "energy",
+          "calorie",
+          "calories",
+          "kcal",
+        ]);
+        const foodCarbs = getNutritionValue([
+          "carbohydrate",
+          "carbohydrates",
+          "carb",
+          "carbs",
+          "total carbohydrate",
+        ]);
+        const foodProtein = getNutritionValue([
+          "protein",
+          "proteins",
+          "total protein",
+        ]);
+        const foodFat = getNutritionValue([
+          "fat",
+          "fats",
+          "total fat",
+          "lipid",
+          "lipids",
+        ]);
 
         // Skip foods with no macro data
         if (
