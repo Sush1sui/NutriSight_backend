@@ -29,7 +29,7 @@ A comprehensive nutrition tracking and food recognition API built with Node.js, 
 
 ### 🍔 Food Recognition & Analysis
 
-- **AI-Powered Food Classification**: Classify 130 Filipino food dishes using a custom-trained CNN model (ONNX Runtime)
+- **AI-Powered Food Classification**: Classify 125 Filipino food dishes using a custom-trained CNN model (ONNX Runtime)
 - **Barcode Scanning**: Retrieve nutritional information from product barcodes via USDA, Nutritionix, and Open Food Facts APIs
 - **Multi-Source Data Aggregation**: Intelligent fallback cascade across 4+ nutrition databases
 - **Food/Not-Food Detection**: External microservice integration to filter non-food images
