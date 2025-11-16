@@ -9,7 +9,7 @@ import class_names from "../cnn_model/class_names.json";
 const router = Router();
 
 router.get("/food-classes", (_req, res) => {
-  return res.json(class_names);
+  return res.json(class_names.filter((name) => name !== "non_food"));
 });
 
 router.post("/barcode", barcodeHandler);

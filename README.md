@@ -29,10 +29,10 @@ A comprehensive nutrition tracking and food recognition API built with Node.js, 
 
 ### 🍔 Food Recognition & Analysis
 
-- **AI-Powered Food Classification**: Classify 125 Filipino food dishes using a custom-trained CNN model (ONNX Runtime)
+- **AI-Powered Food Classification**: Classify 125 Filipino food dishes + non-food detection using a custom-trained CNN model (ONNX Runtime)
 - **Barcode Scanning**: Retrieve nutritional information from product barcodes via USDA, Nutritionix, and Open Food Facts APIs
 - **Multi-Source Data Aggregation**: Intelligent fallback cascade across 4+ nutrition databases
-- **Food/Not-Food Detection**: External microservice integration to filter non-food images
+- **Built-in Non-Food Detection**: CNN model includes `non_food` class for filtering non-food images directly
 
 ### 🔬 Nutritional Intelligence
 
@@ -105,7 +105,6 @@ A comprehensive nutrition tracking and food recognition API built with Node.js, 
 - **USDA FoodData Central**: Primary nutrition database
 - **Nutritionix**: Secondary nutrition source
 - **Open Food Facts**: Crowd-sourced food database
-- **Food/Not-Food Microservice**: External image classification service
 
 ### Email
 
@@ -236,9 +235,6 @@ NUTRITIONIX_APP_ID=your_nutritionix_app_id
 NUTRITIONIX_API_KEY=your_nutritionix_api_key
 HUGGINGFACE_API_KEY=your_huggingface_or_gemini_key
 
-# Food/Not-Food Microservice (optional)
-FOOD_NOT_FOOD_API_KEY=your_microservice_api_key
-
 # Google OAuth (required for Google login)
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
@@ -265,7 +261,6 @@ CLOUDINARY_API_SECRET=your_cloudinary_secret
 - `PORT` - Defaults to 3000
 - `SERVER_LINK` - For self-ping (Heroku free tier keep-alive)
 - `SIGNUP_*` - Rate limit tuning
-- `FOOD_NOT_FOOD_API_KEY` - External microservice authentication
 
 ---
 
@@ -502,8 +497,10 @@ Local: http://localhost:3000
     { "label": "sinigang", "prob": 0.10 },
     { "label": "lechon", "prob": 0.03 }
   ],
-  "error": "not food" // only if microservice detects non-food
+  "error": "not food" // only if non_food appears in top 3 with >=0.5 confidence
 }
+
+// Note: non_food predictions with <0.5 confidence are automatically filtered out from results
 ```
 
 **POST** `/camera/get-food-data`
@@ -708,6 +705,7 @@ Field: profilePicture (file)
     "snacks": [
       {
         "name": "Turon",
+        "servingSize": "1 piece",
         "calories": "150kcal",
         "carbs": "28g",
         "protein": "2g",
@@ -715,10 +713,11 @@ Field: profilePicture (file)
       },
       {
         "name": "Banana Cue",
-        "calories": "180kcal",
-        "carbs": "35g",
-        "protein": "2g",
-        "fat": "5g"
+        "servingSize": "1 piece",
+        "calories": "120kcal",
+        "carbs": "25g",
+        "protein": "1g",
+        "fat": "3g"
       }
     ]
   },
@@ -737,7 +736,7 @@ Field: profilePicture (file)
 }
 ```
 
-_Note: Returns food names from local database categorized by meal type based on calorie ranges (breakfast: 100-500 cal, lunch: 150-600 cal, dinner: 150-550 cal, snacks: 50-250 cal). Foods with user allergens are excluded. Optional macro filters can be applied. Limited to 10 recommendations per meal type._
+_Note: Returns food names from local database categorized by meal type based on calorie ranges (breakfast: 100-500 cal, lunch: 150-600 cal, dinner: 150-550 cal, snacks: 50-150 cal). Foods with user allergens are excluded. Optional macro filters can be applied. Limited to 10 recommendations per meal type._
 
 **GET** `/camera/food-classes`
 

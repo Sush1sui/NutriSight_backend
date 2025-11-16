@@ -48,10 +48,11 @@ This document describes all algorithms and computational concepts used in the Nu
 
 ### **Concept: Convolutional Neural Network (CNN) Inference**
 
-**Description:** A deep learning pipeline that transforms raw food images into probability distributions over 101 Filipino food classes. The algorithm preprocesses images using ImageNet normalization standards, performs forward propagation through an ONNX neural network model, applies softmax normalization to convert logits into probabilities, and returns the top-K most confident predictions sorted by likelihood.
+**Description:** A deep learning pipeline that transforms raw food images into probability distributions over 125 Filipino food classes plus a `non_food` class for filtering non-food images. The algorithm preprocesses images using ImageNet normalization standards, performs forward propagation through an ONNX neural network model, applies softmax normalization to convert logits into probabilities, and returns the top-K most confident predictions sorted by likelihood. The model includes built-in non-food detection: if `non_food` appears in the top 3 predictions with confidence ≥0.5, the image is classified as not food; otherwise, `non_food` predictions are filtered out from the results.
 
-- **Purpose:** Classify food images into 101 Filipino food categories
-- **Model:** Custom-trained ONNX model (256x256 input size)
+- **Purpose:** Classify food images into 125 Filipino food categories + detect non-food images
+- **Model:** Custom-trained ONNX model (252x252 input size) with non_food class
+- **Non-Food Detection:** Top 3 predictions with ≥0.5 confidence threshold
 
 ### **Algorithm Steps:**
 
@@ -60,7 +61,7 @@ This document describes all algorithms and computational concepts used in the Nu
 ```
 Input: Raw image buffer
 Steps:
-  1. Resize image to 256×256 pixels using sharp library
+  1. Resize image to 252×252 pixels using sharp library
   2. Remove alpha channel (convert to RGB)
   3. Convert pixel values from [0, 255] to [0, 1] by dividing by 255
   4. Apply ImageNet normalization:
@@ -69,7 +70,7 @@ Steps:
      - normalized_pixel = (pixel - mean) / std
   5. Reorder dimensions from HWC (Height, Width, Channels) to CHW (Channels, Height, Width)
   6. Convert to Float32Array
-Output: Tensor [1, 3, 256, 256]
+Output: Tensor [1, 3, 252, 252]
 ```
 
 #### **1.2 Softmax Activation**

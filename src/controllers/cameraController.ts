@@ -497,83 +497,46 @@ export async function predictFoodHandler(req: Request, res: Response) {
       imgBuffer,
       modelPath,
       classNames,
-      3
+      4 // Get top 4 in case we need to filter out non_food
     );
 
-    // call external food/not-food microservice
-    try {
-      const MICRO_URL =
-        "https://food-not-food-microservice.onrender.com/predict";
-      const MS_API_KEY =
-        process.env.FOOD_NOT_FOOD_API_KEY ||
-        process.env.FOOD_MICROSERVICE_API_KEY;
+    // Check for non_food class in predictions and its confidence
+    const nonFoodIndex = predictions.findIndex(
+      (p) => p.label.toLowerCase() === "non_food"
+    );
 
-      // Use global FormData/Blob to avoid adding dependencies; cast to any for TypeScript
-      const FormDataClass: any = (globalThis as any).FormData;
-      const BlobClass: any = (globalThis as any).Blob;
-
-      if (FormDataClass && BlobClass && imgBuffer) {
-        const form: any = new FormDataClass();
-        const blob = new BlobClass([imgBuffer], { type: "image/jpeg" });
-        form.append("image", blob, "image.jpg");
-
-        const headers: any = {};
-        if (MS_API_KEY) headers["x-api-key"] = MS_API_KEY;
-
-        const msResp = await fetch(MICRO_URL, {
-          method: "POST",
-          body: form,
-          headers,
-        });
-
-        if (msResp.ok) {
-          const msJson = (await msResp.json()) as any;
-          console.log("Food/not-food microservice response:", msJson);
-          if (msJson?.result === "not_food") {
-            // return predictions but include the required error field
-            res.status(200).json({
-              message: "Food scan data received successfully",
-              data: predictions,
-              error: "not food",
-            });
-            imgBuffer = null;
-            return;
-          }
-        } else {
-          console.warn(
-            "Food/not-food microservice returned non-OK status:",
-            msResp.status
-          );
-        }
-      } else {
-        console.warn(
-          "Skipping microservice call: FormData/Blob not available or no image buffer"
-        );
-      }
-    } catch (msErr) {
-      console.error("Error calling food/not-food microservice:", msErr);
-      // fall through to normal response
+    // If non_food is in top 3 (index 0, 1, or 2) with confidence >= 0.5, it's not food
+    if (
+      (nonFoodIndex === 0 || nonFoodIndex === 1 || nonFoodIndex === 2) &&
+      predictions[nonFoodIndex].prob >= 0.5
+    ) {
+      imgBuffer = null;
+      res.status(200).json({
+        message: "Food scan data received successfully",
+        data: predictions
+          .filter((p) => p.label.toLowerCase() !== "non_food")
+          .slice(0, 3),
+        error: "not food",
+      });
+      return;
     }
+
+    // Filter out non_food from predictions if it exists but doesn't meet threshold
+    let finalPredictions = predictions
+      .filter((p) => p.label.toLowerCase() !== "non_food")
+      .slice(0, 3);
 
     imgBuffer = null;
 
-    if (!predictions || predictions.length === 0) {
+    if (!finalPredictions || finalPredictions.length === 0) {
       console.error("No food items detected in the image");
       res.status(404).json({ error: "No food items detected in the image" });
       return;
     }
 
-    if (predictions.length === 0) {
-      console.error("No food items predicted close to the image");
-      res
-        .status(404)
-        .json({ error: "No food items predicted close to the image" });
-      return;
-    }
-
     res.status(200).json({
       message: "Food scan data received successfully",
-      data: predictions,
+      data: finalPredictions,
     });
     return;
   } catch (error) {
