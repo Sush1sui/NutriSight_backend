@@ -500,12 +500,37 @@ export async function predictFoodHandler(req: Request, res: Response) {
       4 // Get top 4 in case we need to filter out non_food
     );
 
-    // Check for non_food class in predictions and its confidence
+    // Fruits with high non_food contamination rate (require special handling)
+    const exemptFruits = ["banana", "apple", "orange", "strawberry"];
+
+    // Check for exempt fruits in top 3 with >= 0.5 confidence
+    const hasExemptFruit = predictions
+      .slice(0, 3)
+      .some(
+        (p) => exemptFruits.includes(p.label.toLowerCase()) && p.prob >= 0.5
+      );
+
+    // Check for non_food class in predictions
     const nonFoodIndex = predictions.findIndex(
       (p) => p.label.toLowerCase() === "non_food"
     );
 
-    // If non_food is in top 3 (index 0, 1, or 2) with confidence >= 0.5, it's not food
+    // If exempt fruit is present in top 3 with >= 0.5 confidence, just filter out non_food
+    if (hasExemptFruit) {
+      let finalPredictions = predictions
+        .filter((p) => p.label.toLowerCase() !== "non_food")
+        .slice(0, 3);
+
+      imgBuffer = null;
+
+      res.status(200).json({
+        message: "Food scan data received successfully",
+        data: finalPredictions,
+      });
+      return;
+    }
+
+    // If non_food is in top 3 with confidence >= 0.5 (and no exempt fruit), it's not food
     if (
       (nonFoodIndex === 0 || nonFoodIndex === 1 || nonFoodIndex === 2) &&
       predictions[nonFoodIndex].prob >= 0.5

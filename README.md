@@ -497,10 +497,11 @@ Local: http://localhost:3000
     { "label": "sinigang", "prob": 0.10 },
     { "label": "lechon", "prob": 0.03 }
   ],
-  "error": "not food" // only if non_food appears in top 3 with >=0.5 confidence
+  "error": "not food" // only if non_food appears in top 3 with >=0.5 confidence (and no exempt fruit)
 }
 
-// Note: non_food predictions with <0.5 confidence are automatically filtered out from results
+// Note: Fruits (banana, apple, orange, strawberry) with >=0.5 confidence in top 3 override non_food detection
+// non_food predictions are automatically filtered from final results
 ```
 
 **POST** `/camera/get-food-data`

@@ -48,11 +48,12 @@ This document describes all algorithms and computational concepts used in the Nu
 
 ### **Concept: Convolutional Neural Network (CNN) Inference**
 
-**Description:** A deep learning pipeline that transforms raw food images into probability distributions over 125 Filipino food classes plus a `non_food` class for filtering non-food images. The algorithm preprocesses images using ImageNet normalization standards, performs forward propagation through an ONNX neural network model, applies softmax normalization to convert logits into probabilities, and returns the top-K most confident predictions sorted by likelihood. The model includes built-in non-food detection: if `non_food` appears in the top 3 predictions with confidence ≥0.5, the image is classified as not food; otherwise, `non_food` predictions are filtered out from the results.
+**Description:** A deep learning pipeline that transforms raw food images into probability distributions over 125 Filipino food classes plus a `non_food` class for filtering non-food images. The algorithm preprocesses images using ImageNet normalization standards, performs forward propagation through an ONNX neural network model, applies softmax normalization to convert logits into probabilities, and returns the top-K most confident predictions sorted by likelihood. The model includes built-in non-food detection with special handling for fruits prone to false positives: if banana, apple, orange, or strawberry appears in top 3 with confidence ≥0.5, the image is classified as food (non_food filtered out); otherwise, if `non_food` appears in top 3 with confidence ≥0.5, it's classified as not food.
 
 - **Purpose:** Classify food images into 125 Filipino food categories + detect non-food images
 - **Model:** Custom-trained ONNX model (252x252 input size) with non_food class
 - **Non-Food Detection:** Top 3 predictions with ≥0.5 confidence threshold
+- **Exempt Fruits:** banana, apple, orange, strawberry (override non_food detection)
 
 ### **Algorithm Steps:**
 
