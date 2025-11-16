@@ -517,9 +517,23 @@ export async function predictFoodHandler(req: Request, res: Response) {
 
     // If exempt fruit is present in top 3 with >= 0.5 confidence, just filter out non_food
     if (hasExemptFruit) {
-      let finalPredictions = predictions
-        .filter((p) => p.label.toLowerCase() !== "non_food")
-        .slice(0, 3);
+      let filteredPredictions = predictions.filter(
+        (p) => p.label.toLowerCase() !== "non_food"
+      );
+
+      // Find the exempt fruit with highest confidence
+      const exemptFruitPrediction = filteredPredictions.find((p) =>
+        exemptFruits.includes(p.label.toLowerCase())
+      );
+
+      // Move exempt fruit to first position
+      const otherPredictions = filteredPredictions.filter(
+        (p) => !exemptFruits.includes(p.label.toLowerCase())
+      );
+
+      let finalPredictions = exemptFruitPrediction
+        ? [exemptFruitPrediction, ...otherPredictions].slice(0, 3)
+        : filteredPredictions.slice(0, 3);
 
       imgBuffer = null;
 
