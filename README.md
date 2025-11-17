@@ -19,6 +19,7 @@ A comprehensive nutrition tracking and food recognition API built with Node.js, 
 - [API Documentation](#-api-documentation)
 - [Database Schema](#-database-schema)
 - [Algorithms](#-algorithms)
+- [Final Defense Q&A](./FINAL_DEFENSE_QA.md)
 - [Deployment](#-deployment)
 - [Contributing](#-contributing)
 - [License](#-license)
