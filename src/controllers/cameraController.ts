@@ -679,16 +679,18 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           (req.user as any).allergens
         );
 
+        const results = {
+          foodName: food.name,
+          ingredients,
+          triggeredAllergens: mergedAllergens,
+          nutritionData: convertedGroupedNutrition,
+          servingSize: food.serving_size,
+          source: food.source || "database",
+        };
+
         res.status(200).json({
           message: "Food data retrieved successfully",
-          data: {
-            foodName: food.name,
-            ingredients,
-            triggeredAllergens: mergedAllergens,
-            nutritionData: convertedGroupedNutrition,
-            servingSize: food.serving_size,
-            source: food.source || "database",
-          },
+          data: results,
         });
         return;
       }
@@ -819,7 +821,6 @@ export async function getFoodDataHandler(req: Request, res: Response) {
             results.ingredients &&
             results.servingSize
           ) {
-            console.log("Results:", results);
             res.status(200).json({
               message: "Food Data received successfully",
               data: results,
