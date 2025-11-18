@@ -586,11 +586,11 @@ export async function predictFoodHandler(req: Request, res: Response) {
 
 export async function getFoodDataHandler(req: Request, res: Response) {
   try {
-    if (!req.user) {
-      console.error("User not authenticated");
-      res.status(401).json({ message: "User not authenticated" });
-      return;
-    }
+    // if (!req.user) {
+    //   console.error("User not authenticated");
+    //   res.status(401).json({ message: "User not authenticated" });
+    //   return;
+    // }
 
     const { foodName } = req.body;
 
@@ -685,8 +685,6 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           servingSize: food.serving_size,
           source: food.source || "database",
         };
-
-        console.log("Result DB:", results);
 
         res.status(200).json({
           message: "Food data retrieved successfully",
@@ -957,8 +955,6 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       "150g"
     );
 
-    console.log("Gemini API response:", geminiRes);
-
     if (!geminiRes) {
       res.status(500).json({ message: "Failed to process food data" });
       return;
@@ -978,8 +974,10 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       servingSize: "150g",
       ingredients,
       triggeredAllergens: mergedAllergens,
-      nutritionData: geminiRes.groupedNutrition.map((g) =>
-        g.items
+      // Ensure Gemini fallback returns an array of group objects ({title, items})
+      nutritionData: geminiRes.groupedNutrition.map((g) => ({
+        title: g.title ?? "",
+        items: g.items
           .map((n) => {
             if (
               n.name.toLowerCase().includes("energy") ||
@@ -1005,12 +1003,10 @@ export async function getFoodDataHandler(req: Request, res: Response) {
               unit: "g",
             };
           })
-          .filter((n) => n.value > 0.01)
-      ),
+          .filter((n) => n.value > 0.01),
+      })),
       source: "gemini",
     };
-
-    console.log("Gemini Fallback Results:", results);
 
     res.status(200).json({
       message: "Food Data received successfully",

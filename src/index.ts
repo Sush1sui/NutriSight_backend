@@ -15,6 +15,21 @@ let timeoutId: NodeJS.Timeout;
 
 const app = express();
 app.set("trust proxy", 1); // Trust the first proxy
+
+// DEV ONLY - set a fake req.user so handlers receive allergens during local testing
+// if (process.env.NODE_ENV !== "production") {
+//   app.use((req, _res, next) => {
+//     // Adjust these values to match a typical user in your app
+//     req.user = {
+//       _id: "dev-user-id",
+//       email: "dev@example.com",
+//       allergens: ["fish", "peanut"], // <-- set whichever allergens you want to simulate
+//       // add other fields your code expects, e.g. roles, name
+//     } as any;
+//     next();
+//   });
+// }
+
 // app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: "25mb" })); // Increase limit as needed
