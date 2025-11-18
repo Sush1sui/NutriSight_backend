@@ -971,8 +971,6 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       (req.user as any).allergens
     );
 
-    console.log("Gemini groupedNutrition:", geminiRes.groupedNutrition);
-
     res.status(200).json({
       message: "Food Data received successfully",
       data: {

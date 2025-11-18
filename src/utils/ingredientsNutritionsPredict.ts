@@ -121,16 +121,23 @@ For the food "${foodName}", do the following:
 4. Organize the nutrition data into three groups: Macronutrients, Micronutrients, and Other Nutrients.
 5. When matching allergens, only use single, simple ingredient names (not full phrases or grouped ingredients).
 6. Make sure that in triggered allergens, the ingredient name exists in ingredients array
-Return your answer as valid JSON in this format:
+
+IMPORTANT: Return only JSON and follow the exact schema below. All numeric fields must be numeric (no units embedded in the value field). Example:
 {
-  "ingredients": [array of strings],
-  "triggeredAllergens": [
-    { "ingredient": "ingredient name", "allergen": "allergen name" }
-  ],
+  "ingredients": ["squash","garlic","onion"],
+  "triggeredAllergens": [{ "ingredient":"shrimp paste", "allergen":"fish" }],
   "groupedNutrition": [
-    { "title": "Macronutrients", "items": [...] },
-    { "title": "Micronutrients", "items": [...] },
-    { "title": "Other Nutrients", "items": [...] }
+    {
+      "title":"Macronutrients",
+      "items":[
+        {"name":"calories","value":230,"unit":"kcal"},
+        {"name":"protein","value":8,"unit":"g"},
+        {"name":"fat","value":12,"unit":"g"},
+        {"name":"carbohydrates","value":20,"unit":"g"}
+      ]
+    },
+    {"title":"Micronutrients","items":[{"name":"vitamin A","value":120,"unit":"mcg"}]},
+    {"title":"Other Nutrients","items":[{"name":"fiber","value":3.5,"unit":"g"}]}
   ]
 }
 `;
@@ -139,6 +146,9 @@ Return your answer as valid JSON in this format:
     model: "gemini-2.5-flash-lite",
     contents: prompt,
   });
+
+  // DEBUG: log raw model output for diagnostics
+  console.log("Gemini raw response text (fallback):", response.text);
 
   let result: {
     ingredients: string[];
@@ -156,18 +166,23 @@ Return your answer as valid JSON in this format:
     const match = response.text?.match(/\{[\s\S]*\}/);
     if (match) {
       result = JSON.parse(match[0]);
-
       console.log("Gemini fallback groupedNutrition:", result.groupedNutrition);
 
+      // While debugging, keep small positive nutrition values (filter out non-positive only)
       result.groupedNutrition = result.groupedNutrition
         .map((group) => ({
           ...group,
-          items: group.items.filter((item) => item.value > 0.01),
+          items: group.items.filter((item) => item.value > 0.001),
         }))
         .filter((group) => group.items.length > 0);
+    } else {
+      console.log(
+        "No JSON block found in Gemini fallback response:",
+        response.text
+      );
     }
   } catch (e) {
-    console.error("Failed to parse response:", e);
+    console.error("Failed to parse fallback response:", e, response.text);
     return result;
   }
 
