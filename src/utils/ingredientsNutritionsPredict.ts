@@ -156,6 +156,9 @@ Return your answer as valid JSON in this format:
     const match = response.text?.match(/\{[\s\S]*\}/);
     if (match) {
       result = JSON.parse(match[0]);
+
+      console.log("Gemini fallback groupedNutrition:", result.groupedNutrition);
+
       result.groupedNutrition = result.groupedNutrition
         .map((group) => ({
           ...group,
