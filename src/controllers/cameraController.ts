@@ -819,6 +819,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
             results.ingredients &&
             results.servingSize
           ) {
+            console.log("Results:", results);
             res.status(200).json({
               message: "Food Data received successfully",
               data: results,
@@ -971,44 +972,48 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       (req.user as any).allergens
     );
 
+    const results = {
+      foodName,
+      servingSize: "150g",
+      ingredients,
+      triggeredAllergens: mergedAllergens,
+      nutritionData: geminiRes.groupedNutrition.map((g) =>
+        g.items
+          .map((n) => {
+            if (
+              n.name.toLowerCase().includes("energy") ||
+              n.name.toLowerCase().includes("calorie") ||
+              n.unit.toLowerCase() === "kcal" ||
+              n.unit.toLowerCase() === "cal" ||
+              n.unit.toLowerCase() === "cals"
+            ) {
+              return {
+                ...n,
+                unit: "kcal",
+              };
+            }
+
+            return {
+              name: n.name,
+              value: convertToGrams(
+                n.value,
+                n.unit,
+                n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
+                n.name
+              ).value,
+              unit: "g",
+            };
+          })
+          .filter((n) => n.value > 0.01)
+      ),
+      source: "gemini",
+    };
+
+    console.log("Gemini Fallback Results:", results);
+
     res.status(200).json({
       message: "Food Data received successfully",
-      data: {
-        foodName,
-        servingSize: "150g",
-        ingredients,
-        triggeredAllergens: mergedAllergens,
-        nutritionData: geminiRes.groupedNutrition.map((g) =>
-          g.items
-            .map((n) => {
-              if (
-                n.name.toLowerCase().includes("energy") ||
-                n.name.toLowerCase().includes("calorie") ||
-                n.unit.toLowerCase() === "kcal" ||
-                n.unit.toLowerCase() === "cal" ||
-                n.unit.toLowerCase() === "cals"
-              ) {
-                return {
-                  ...n,
-                  unit: "kcal",
-                };
-              }
-
-              return {
-                name: n.name,
-                value: convertToGrams(
-                  n.value,
-                  n.unit,
-                  n.name.toLowerCase().replace(/_/g, " ").replace(/-/g, " "),
-                  n.name
-                ).value,
-                unit: "g",
-              };
-            })
-            .filter((n) => n.value > 0.01)
-        ),
-        source: "gemini",
-      },
+      data: results,
     });
     return;
   } catch (error) {
