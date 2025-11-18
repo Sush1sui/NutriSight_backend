@@ -668,8 +668,6 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           })
         );
 
-        console.log(convertedGroupedNutrition);
-
         const ingredients = food.common_ingredients;
 
         // Merge Gemini AI allergen detection with local comprehensive mapping
@@ -687,6 +685,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           servingSize: food.serving_size,
           source: food.source || "database",
         };
+
+        console.log("Result DB:", results);
 
         res.status(200).json({
           message: "Food data retrieved successfully",
