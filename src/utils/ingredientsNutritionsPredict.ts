@@ -165,21 +165,125 @@ IMPORTANT: Return only JSON and follow the exact schema below. All numeric field
   try {
     const match = response.text?.match(/\{[\s\S]*\}/);
     if (match) {
-      result = JSON.parse(match[0]);
-      console.log("Gemini fallback groupedNutrition:", result.groupedNutrition);
+      const parsed = JSON.parse(match[0]);
 
-      // While debugging, keep small positive nutrition values (filter out non-positive only)
-      result.groupedNutrition = result.groupedNutrition
-        .map((group) => ({
-          ...group,
-          items: group.items.filter((item) => item.value > 0.001),
-        }))
-        .filter((group) => group.items.length > 0);
+      // Raw grouped data may appear in different shapes. Try to detect and normalize.
+      // 1) { groupedNutrition: [ { title, items: [...] }, ... ], ingredients, triggeredAllergens }
+      // 2) [ [items...], [items...], [items...] ]  (array-of-arrays)
+      // 3) [ {name, value, unit}, ... ] (single array of items)
+      const rawGrouped: any =
+        parsed && parsed.groupedNutrition ? parsed.groupedNutrition : parsed;
+
+      console.log("Gemini fallback raw groupedNutrition:", rawGrouped);
+
+      const normalizeItem = (
+        it: any
+      ): { name: string; value: number; unit: string } | null => {
+        if (!it || typeof it !== "object") return null;
+        const name = (it.name ?? it.n ?? "unknown") as string;
+        let value: any = it.value ?? it.v ?? it.amount ?? null;
+        const unit = (it.unit ?? it.u ?? "") as string;
+        if (typeof value === "string") {
+          const num = parseFloat(value.replace(/[^0-9\.\-]/g, ""));
+          value = isNaN(num) ? null : num;
+        }
+        value = value == null ? null : Number(value);
+        if (value == null || Number.isNaN(value)) return null;
+        return { name, value, unit };
+      };
+
+      const titles = ["Macronutrients", "Micronutrients", "Other Nutrients"];
+
+      if (
+        Array.isArray(rawGrouped) &&
+        rawGrouped.length > 0 &&
+        Array.isArray(rawGrouped[0])
+      ) {
+        // array-of-arrays -> map to titled groups
+        result.groupedNutrition = (rawGrouped as any[])
+          .map((items: any[], idx: number) => ({
+            title: titles[idx] ?? `Group ${idx + 1}`,
+            items: (items || [])
+              .map(normalizeItem)
+              .filter(
+                (i: any): i is { name: string; value: number; unit: string } =>
+                  i !== null
+              ) as {
+              name: string;
+              value: number;
+              unit: string;
+            }[],
+          }))
+          .filter((g) => g.items.length > 0);
+      } else if (
+        Array.isArray(rawGrouped) &&
+        rawGrouped.length > 0 &&
+        rawGrouped[0] &&
+        typeof rawGrouped[0] === "object" &&
+        "title" in rawGrouped[0]
+      ) {
+        // already grouped objects
+        result.groupedNutrition = (rawGrouped as any[])
+          .map((g) => ({
+            title: g.title,
+            items: (g.items || [])
+              .map(normalizeItem)
+              .filter(
+                (i: any): i is { name: string; value: number; unit: string } =>
+                  i !== null
+              ) as {
+              name: string;
+              value: number;
+              unit: string;
+            }[],
+          }))
+          .filter((g) => g.items.length > 0);
+      } else if (
+        Array.isArray(rawGrouped) &&
+        rawGrouped.length > 0 &&
+        rawGrouped[0] &&
+        rawGrouped[0].name
+      ) {
+        // single array of nutrient items -> wrap as macronutrients
+        result.groupedNutrition = [
+          {
+            title: "Macronutrients",
+            items: (rawGrouped as any[])
+              .map(normalizeItem)
+              .filter(
+                (i: any): i is { name: string; value: number; unit: string } =>
+                  i !== null
+              ) as {
+              name: string;
+              value: number;
+              unit: string;
+            }[],
+          },
+        ];
+      } else {
+        console.log(
+          "Unrecognized groupedNutrition format from Gemini:",
+          rawGrouped
+        );
+        result.groupedNutrition = [];
+      }
+
+      // Extract ingredients/triggeredAllergens if present
+      if (parsed && Array.isArray(parsed.ingredients))
+        result.ingredients = parsed.ingredients;
+      if (parsed && Array.isArray(parsed.triggeredAllergens))
+        result.triggeredAllergens = parsed.triggeredAllergens;
+
+      console.log(
+        "Normalized Gemini groupedNutrition:",
+        result.groupedNutrition
+      );
     } else {
       console.log(
         "No JSON block found in Gemini fallback response:",
         response.text
       );
+      result.groupedNutrition = [];
     }
   } catch (e) {
     console.error("Failed to parse fallback response:", e, response.text);
