@@ -87,24 +87,33 @@ export async function barcodeHandler(req: Request, res: Response) {
     }
 
     console.log("Fetching data from USDA API...");
-    const response = await fetch(
-      `https://api.nal.usda.gov/fdc/v1/foods/search?query=${barcodeData}`,
-      {
-        headers: {
-          "x-api-key": USDA_API_KEY,
-        },
+    let food: any = null;
+    try {
+      const response = await fetch(
+        `https://api.nal.usda.gov/fdc/v1/foods/search?query=${barcodeData}`,
+        {
+          headers: {
+            "x-api-key": USDA_API_KEY,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const bodyText = await response.text().catch(() => null);
+        console.error(
+          "USDA API returned non-OK response:",
+          response.status,
+          bodyText
+        );
+        // Do not immediately return a 500 here — allow fallbacks (Nutritionix / OFF)
+      } else {
+        const data: any = await response.json();
+        food = data?.foods ? data.foods[0] : null;
       }
-    );
-
-    if (!response.ok) {
-      console.error("Failed to fetch data from USDA API");
-      res.status(500).json({ error: "Failed to fetch data from USDA API" });
-      return;
+    } catch (err) {
+      console.error("Error calling USDA API:", err);
+      // swallow and continue to fallbacks
     }
-
-    let data: any = await response.json();
-    const food = data?.foods ? data.foods[0] : null;
-    data = null;
     if (food) {
       const organizedResult = await scanAllergensAndOrganizeNutrition(
         food.description,
