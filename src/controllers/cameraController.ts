@@ -73,6 +73,35 @@ function mergeAllergenDetection(
   return merged;
 }
 
+/**
+ * Normalize user-provided allergens: trim, lowercase, remove trailing punctuation,
+ * and drop a leading `custom_` prefix so internal detection uses the canonical name.
+ */
+function normalizeUserAllergens(raw: any): string[] {
+  if (!raw) return [];
+  const items = Array.isArray(raw) ? raw : [raw];
+  const out: string[] = [];
+
+  const customRe = /^custom_/i;
+  const trailingCommaRe = /,$/;
+  const quoteRe = /^["']|["']$/g;
+
+  for (const it of items) {
+    let s = (it ?? "").toString().trim();
+    if (!s) continue;
+
+    // apply canonical cleaning in-place (single pass)
+    s = s.replace(customRe, "");
+    s = s.replace(trailingCommaRe, "");
+    s = s.replace(quoteRe, "");
+    s = s.toLowerCase().trim();
+
+    if (s) out.push(s);
+  }
+
+  return out;
+}
+
 export async function barcodeHandler(req: Request, res: Response) {
   try {
     if (!req.user) {
@@ -117,7 +146,7 @@ export async function barcodeHandler(req: Request, res: Response) {
     if (food) {
       const organizedResult = await scanAllergensAndOrganizeNutrition(
         food.description,
-        (req.user as any).allergens,
+        normalizeUserAllergens((req.user as any).allergens),
         food.foodNutrients,
         true,
         (food.ingredients as string)?.split(",") || []
@@ -189,7 +218,7 @@ export async function barcodeHandler(req: Request, res: Response) {
         const mergedAllergens = mergeAllergenDetection(
           organizedResult.triggeredAllergens,
           ingredients,
-          (req.user as any).allergens
+          normalizeUserAllergens((req.user as any).allergens)
         );
 
         res.status(200).json({
@@ -233,7 +262,7 @@ export async function barcodeHandler(req: Request, res: Response) {
       if (food) {
         const organizedResult = await scanAllergensAndOrganizeNutrition(
           food.food_name,
-          (req.user as any).allergens,
+          normalizeUserAllergens((req.user as any).allergens),
           getNutrientsFromNutritionix(food.full_nutrients),
           true,
           typeof food.nf_ingredient_statement === "string"
@@ -312,7 +341,7 @@ export async function barcodeHandler(req: Request, res: Response) {
           const mergedAllergens = mergeAllergenDetection(
             organizedResult.triggeredAllergens,
             ingredients,
-            (req.user as any).allergens
+            normalizeUserAllergens((req.user as any).allergens)
           );
 
           res.status(200).json({
@@ -373,7 +402,7 @@ export async function barcodeHandler(req: Request, res: Response) {
 
     const organizedResult = await scanAllergensAndOrganizeNutrition(
       offData.product.product_name,
-      (req.user as any).allergens,
+      normalizeUserAllergens((req.user as any).allergens),
       formattedNutriments,
       true,
       ingredientNames
@@ -455,7 +484,7 @@ export async function barcodeHandler(req: Request, res: Response) {
     const mergedAllergens = mergeAllergenDetection(
       organizedResult.triggeredAllergens,
       ingredients,
-      (req.user as any).allergens
+      normalizeUserAllergens((req.user as any).allergens)
     );
 
     res.status(200).json({
@@ -611,7 +640,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
     if (food) {
       const geminiRes = await scanAllergensAndOrganizeNutrition(
         foodName,
-        (req.user as any).allergens,
+        normalizeUserAllergens((req.user as any).allergens),
         food.nutrition,
         false,
         food.common_ingredients || [],
@@ -683,7 +712,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         const mergedAllergens = mergeAllergenDetection(
           geminiRes.triggeredAllergens,
           ingredients,
-          (req.user as any).allergens
+          normalizeUserAllergens((req.user as any).allergens)
         );
 
         const results = {
@@ -739,7 +768,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       if (food) {
         const geminiRes = await scanAllergensAndOrganizeNutrition(
           foodName,
-          (req.user as any).allergens,
+          normalizeUserAllergens((req.user as any).allergens),
           food.foodNutrients,
           false,
           (food.ingredients as string)?.split(",") || []
@@ -814,7 +843,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           results.triggeredAllergens = mergeAllergenDetection(
             geminiRes.triggeredAllergens,
             results.ingredients,
-            (req.user as any).allergens
+            normalizeUserAllergens((req.user as any).allergens)
           );
 
           results.nutritionData = convertedGroupedNutrition.map((g) => ({
@@ -861,7 +890,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
       if (food) {
         const geminiRes = await scanAllergensAndOrganizeNutrition(
           foodName,
-          (req.user as any).allergens,
+          normalizeUserAllergens((req.user as any).allergens),
           food.full_nutrients,
           false,
           []
@@ -935,7 +964,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           const mergedAllergens = mergeAllergenDetection(
             geminiRes.triggeredAllergens,
             ingredients,
-            (req.user as any).allergens
+            normalizeUserAllergens((req.user as any).allergens)
           );
 
           const result = {
@@ -960,7 +989,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
     console.log("Falling back to Gemini API for food data");
     const geminiRes = await geminiFallbackGroupedNutrition(
       foodName,
-      (req.user as any).allergens,
+      normalizeUserAllergens((req.user as any).allergens),
       "150g"
     );
 
@@ -975,7 +1004,7 @@ export async function getFoodDataHandler(req: Request, res: Response) {
     const mergedAllergens = mergeAllergenDetection(
       geminiRes.triggeredAllergens,
       ingredients,
-      (req.user as any).allergens
+      normalizeUserAllergens((req.user as any).allergens)
     );
 
     const results = {
