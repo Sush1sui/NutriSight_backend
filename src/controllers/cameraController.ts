@@ -50,10 +50,15 @@ const modelPath = "src/cnn_model/model.onnx";
 function mergeAllergenDetection(
   geminiAllergens: Array<{ ingredient: string; allergen: string }>,
   ingredients: string[],
-  userAllergens: string[]
+  userAllergens: string[],
+  foodName?: string
 ): Array<{ ingredient: string; allergen: string }> {
   // Get allergens from local mapping
-  const localAllergens = getTriggeredAllergens(ingredients, userAllergens);
+  const localAllergens = getTriggeredAllergens(
+    ingredients,
+    userAllergens,
+    foodName
+  );
 
   // Merge both results, avoiding duplicates
   const merged = [...geminiAllergens];
@@ -218,7 +223,8 @@ export async function barcodeHandler(req: Request, res: Response) {
         const mergedAllergens = mergeAllergenDetection(
           organizedResult.triggeredAllergens,
           ingredients,
-          normalizeUserAllergens((req.user as any).allergens)
+          normalizeUserAllergens((req.user as any).allergens),
+          food.name || food.foodName || food.description
         );
 
         res.status(200).json({
@@ -341,7 +347,8 @@ export async function barcodeHandler(req: Request, res: Response) {
           const mergedAllergens = mergeAllergenDetection(
             organizedResult.triggeredAllergens,
             ingredients,
-            normalizeUserAllergens((req.user as any).allergens)
+            normalizeUserAllergens((req.user as any).allergens),
+            food.food_name || food.foodName || food.description
           );
 
           res.status(200).json({
@@ -484,7 +491,8 @@ export async function barcodeHandler(req: Request, res: Response) {
     const mergedAllergens = mergeAllergenDetection(
       organizedResult.triggeredAllergens,
       ingredients,
-      normalizeUserAllergens((req.user as any).allergens)
+      normalizeUserAllergens((req.user as any).allergens),
+      food.food_name || food.foodName || food.description
     );
 
     res.status(200).json({
@@ -712,7 +720,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
         const mergedAllergens = mergeAllergenDetection(
           geminiRes.triggeredAllergens,
           ingredients,
-          normalizeUserAllergens((req.user as any).allergens)
+          normalizeUserAllergens((req.user as any).allergens),
+          foodName
         );
 
         const results = {
@@ -843,7 +852,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           results.triggeredAllergens = mergeAllergenDetection(
             geminiRes.triggeredAllergens,
             results.ingredients,
-            normalizeUserAllergens((req.user as any).allergens)
+            normalizeUserAllergens((req.user as any).allergens),
+            foodName
           );
 
           results.nutritionData = convertedGroupedNutrition.map((g) => ({
@@ -964,7 +974,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
           const mergedAllergens = mergeAllergenDetection(
             geminiRes.triggeredAllergens,
             ingredients,
-            normalizeUserAllergens((req.user as any).allergens)
+            normalizeUserAllergens((req.user as any).allergens),
+            foodName
           );
 
           const result = {
@@ -1004,7 +1015,8 @@ export async function getFoodDataHandler(req: Request, res: Response) {
     const mergedAllergens = mergeAllergenDetection(
       geminiRes.triggeredAllergens,
       ingredients,
-      normalizeUserAllergens((req.user as any).allergens)
+      normalizeUserAllergens((req.user as any).allergens),
+      foodName
     );
 
     const results = {

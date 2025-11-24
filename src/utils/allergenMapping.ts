@@ -1157,19 +1157,31 @@ export const allergenKeywordMapping: AllergenKeywordMap = {
  * @param userAllergens - Array of user's allergens (e.g., ["peanuts", "milk"])
  * @returns Boolean indicating if any allergens were found
  */
+/**
+ * Check whether the given ingredients or optional product name match any of the
+ * user's allergens.
+ * @param ingredients - Array of ingredient names to check
+ * @param userAllergens - Array of user's allergens (e.g., ["peanuts", "milk"])
+ * @param foodName - Optional product/food name to include in detection
+ */
 export function hasAllergen(
   ingredients: string[],
-  userAllergens: string[]
+  userAllergens: string[],
+  foodName?: string
 ): boolean {
-  if (!ingredients || !userAllergens || userAllergens.length === 0) {
-    return false;
-  }
+  if ((!ingredients || ingredients.length === 0) && !foodName) return false;
+  if (!userAllergens || userAllergens.length === 0) return false;
 
-  // Normalize ingredients to lowercase for case-insensitive matching
-  const ingredientsLower = ingredients.map((i) => i.toLowerCase().trim());
+  // Build search list: include product name (if provided) then ingredients
+  const ingredientsLower: string[] = [];
+  if (foodName) ingredientsLower.push(String(foodName).toLowerCase().trim());
+  if (ingredients && ingredients.length > 0)
+    ingredientsLower.push(...ingredients.map((i) => i.toLowerCase().trim()));
 
   for (const allergen of userAllergens) {
-    const allergenLower = allergen.toLowerCase().trim();
+    const allergenLower = String(allergen || "")
+      .toLowerCase()
+      .trim();
 
     // Skip "none" allergen
     if (allergenLower === "none" || allergenLower === "no allergies") {
@@ -1179,15 +1191,13 @@ export function hasAllergen(
     // Get keyword list for this allergen
     const keywords = allergenKeywordMapping[allergenLower] || [allergenLower];
 
-    // Check if any ingredient contains any keyword (word boundary matching)
+    // Check if any ingredient or product name contains any keyword (word boundary matching)
     for (const ingredient of ingredientsLower) {
       for (const keyword of keywords) {
-        const keywordLower = keyword.toLowerCase();
+        const keywordLower = String(keyword || "").toLowerCase();
 
-        // Use word boundary regex to avoid false positives
-        // e.g., "fish" matches "fish sauce" but not "shellfish"
         const wordBoundaryRegex = new RegExp(
-          `\\b${keywordLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+          `\\b${keywordLower.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}\\b`,
           "i"
         );
 
@@ -1207,19 +1217,46 @@ export function hasAllergen(
  * @param userAllergens - Array of user's allergens
  * @returns Array of triggered allergen objects with ingredient and allergen name
  */
+/**
+ * Gets detailed list of triggered allergens with specific ingredients.
+ * Optionally checks the product/food name as well.
+ * @param ingredients - Array of ingredient names to check
+ * @param userAllergens - Array of user's allergens
+ * @param foodName - Optional product/food name to include in detection
+ */
 export function getTriggeredAllergens(
   ingredients: string[],
-  userAllergens: string[]
+  userAllergens: string[],
+  foodName?: string
 ): Array<{ ingredient: string; allergen: string }> {
-  if (!ingredients || !userAllergens || userAllergens.length === 0) {
-    return [];
-  }
+  if ((!ingredients || ingredients.length === 0) && !foodName) return [];
+  if (!userAllergens || userAllergens.length === 0) return [];
 
   const triggered: Array<{ ingredient: string; allergen: string }> = [];
-  const ingredientsLower = ingredients.map((i) => i.toLowerCase().trim());
+
+  // Build a search list that includes the food name first (if provided),
+  // then the original ingredients. Keep original array for reporting.
+  const searchItems: string[] = [];
+  const originalItems: string[] = [];
+  if (foodName) {
+    searchItems.push(String(foodName).toLowerCase().trim());
+    originalItems.push(String(foodName));
+  }
+  if (ingredients && ingredients.length > 0) {
+    for (const ing of ingredients) {
+      searchItems.push(
+        String(ing || "")
+          .toLowerCase()
+          .trim()
+      );
+      originalItems.push(ing);
+    }
+  }
 
   for (const allergen of userAllergens) {
-    const allergenLower = allergen.toLowerCase().trim();
+    const allergenLower = String(allergen || "")
+      .toLowerCase()
+      .trim();
 
     // Skip "none" allergen
     if (allergenLower === "none" || allergenLower === "no allergies") {
@@ -1229,26 +1266,25 @@ export function getTriggeredAllergens(
     // Get keyword list for this allergen
     const keywords = allergenKeywordMapping[allergenLower] || [allergenLower];
 
-    // Check each ingredient (word boundary matching)
-    for (let i = 0; i < ingredients.length; i++) {
-      const ingredient = ingredients[i];
-      const ingredientLower = ingredientsLower[i];
+    // Check each search item (word boundary matching)
+    for (let i = 0; i < searchItems.length; i++) {
+      const itemLower = searchItems[i];
+      const original = originalItems[i];
 
       for (const keyword of keywords) {
-        const keywordLower = keyword.toLowerCase();
+        const keywordLower = String(keyword || "").toLowerCase();
 
-        // Use word boundary regex to avoid false positives
         const wordBoundaryRegex = new RegExp(
-          `\\b${keywordLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+          `\\b${keywordLower.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}\\b`,
           "i"
         );
 
-        if (wordBoundaryRegex.test(ingredientLower)) {
+        if (wordBoundaryRegex.test(itemLower)) {
           triggered.push({
-            ingredient: ingredient, // Keep original casing
+            ingredient: original, // Keep original casing for reporting
             allergen: allergen, // Keep original allergen name
           });
-          break; // Only add once per ingredient
+          break; // Only add once per search item
         }
       }
     }
